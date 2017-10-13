@@ -5,9 +5,7 @@ import trafaret as t
 class ValidateBase(object):
     __metaclass__ = abc.ABCMeta
 
-    def action_validate(self, **kwargs):
-
-        choices = ['create', 'delete', 'restore']
+    def action_validate(self, choices, **kwargs):
 
         action_schema = t.Dict({
             t.Key('type'): t.String,

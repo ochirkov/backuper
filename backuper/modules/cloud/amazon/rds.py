@@ -3,6 +3,7 @@ from backuper.utils import get_msg
 import trafaret as t
 from backuper.utils.validate import ValidateBase
 from time import sleep
+from multiprocessing import Process
 
 
 class ValidateRDS(ValidateBase):
@@ -32,7 +33,9 @@ class Main(object):
 
     def config(self):
 
-        self.validate.action_validate(**self.kwargs)
+        choices = ['create', 'delete', 'restore']
+
+        self.validate.action_validate(choices, **self.kwargs)
         self.validate.params_validate(**self.kwargs)
 
     def get_snapshots(self, region):
@@ -77,13 +80,13 @@ class Main(object):
 
         SourceDBSnapshotIdentifier = resource['DBSnapshot']['DBSnapshotArn']
 
-        c = get_amazon_client(self.module, region)
+        c = get_amazon_client(self.kwargs['type'], region)
 
         response = c.copy_db_snapshot(
             SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,
-            TargetDBSnapshotIdentifier=self.snapshot_identifier,
+            TargetDBSnapshotIdentifier=self.kwargs['parameters']['snapshot_identifier'],
             CopyTags=True,
-            SourceRegion=self.region
+            SourceRegion=self.kwargs['parameters']['region']
         )
 
         return response
@@ -121,6 +124,15 @@ class Main(object):
 
         if self.kwargs['action'] == 'create':
 
-            self.create_snapshot()
+            create_r = self.create_snapshot()
             self.wait_snapshot(self.kwargs['parameters']['region'],
                                self.kwargs['parameters']['snapshot_identifier'])
+
+            if self.kwargs['parameters']['copy_to_region'] is not None:
+                jobs = []
+                for region in self.kwargs['parameters']['copy_to_region']:
+                    self.copy_snapshot(create_r, region)
+                    p = Process(target=self.wait_snapshot,
+                                args=(region, self.kwargs['parameters']['snapshot_identifier']))
+                    jobs.append(p)
+                    p.start()
