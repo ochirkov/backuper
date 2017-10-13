@@ -1,13 +1,13 @@
 import re
 import pytz
 from datetime import datetime
-from .exceptions import BackuperCNoSnapshotMatchError
+from .exceptions import BackuperNoSnapshotMatchError
 
 
 def check_snapshot_match(snapshots, msg):
 
     if not snapshots:
-        raise BackuperCNoSnapshotMatchError(msg)
+        raise BackuperNoSnapshotMatchError(msg)
 
 
 class BackuperFilter(object):
@@ -20,7 +20,7 @@ class BackuperFilter(object):
             m = re.match(pattern, i['name'])
 
         if m:
-            filtered.append(i['name'])
+            filtered.append(i)
 
         check_snapshot_match(filtered, 'Any matches by regex filter...')
 

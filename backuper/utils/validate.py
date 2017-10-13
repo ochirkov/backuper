@@ -22,7 +22,22 @@ class ValidateBase(object):
         """Your params validation implementation."""
         pass
 
-    @abc.abstractmethod
-    def filters_validate(self):
-        """Your filters validation implementation."""
-        pass
+    def filters_validate(self, **kwargs):
+
+        regex_filter_schema = t.Dict({
+            t.Key('pattern'): t.String,
+            t.Key('type'): t.String
+        })
+
+        age_filter_schema = t.Dict({
+            t.Key('term'): t.String,
+            t.Key('type'): t.String,
+            t.Key('unit'): t.String,
+            t.Key('count'): t.Int
+        })
+
+        checks = {'regex': regex_filter_schema,
+                  'age': age_filter_schema}
+
+        for filter in kwargs['filters']:
+            checks[filter['type']](filter)

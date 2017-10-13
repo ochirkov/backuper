@@ -20,6 +20,12 @@ class ValidateRDS(ValidateBase):
                     t.String, min_length=1)
             })
 
+        if kwargs['action'] == 'delete':
+
+            parameters_schema = t.Dict({
+                t.Key('region'): t.String
+            })
+
         parameters_schema(kwargs['parameters'])
 
 
@@ -37,6 +43,9 @@ class Main(object):
 
         self.validate.action_validate(choices, **self.kwargs)
         self.validate.params_validate(**self.kwargs)
+
+        if self.kwargs['action'] == 'delete':
+            self.validate.filters_validate(**self.kwargs)
 
     def get_snapshots(self, region):
 
@@ -58,20 +67,16 @@ class Main(object):
 
     def delete_snapshot(self, region, snapshots):
 
-        c = get_amazon_client(self.module, region)
+        c = get_amazon_client(self.kwargs['type'], region)
 
         r = []
         for i in snapshots:
             response = c.delete_db_snapshot(
                 DBSnapshotIdentifier=i
             )
-            print(get_msg(
-                self.module) + 'Deleting snapshot {} in {} region...'.format(
+            print(get_msg(self.kwargs['type']) +
+                  'Deleting snapshot {} in {} region...'.format(
                 i, region))
-            print(get_msg(
-                self.module) + 'Snapshot status of {} in {} region is {}'.format(
-                i, region, response['DBSnapshot']['Status']))
-            print('\n')
             r.append(response)
 
         return r
@@ -136,3 +141,9 @@ class Main(object):
                                 args=(region, self.kwargs['parameters']['snapshot_identifier']))
                     jobs.append(p)
                     p.start()
+
+        # if self.kwargs['action'] == 'delete':
+        #     snapshots = self.get_snapshots(self,
+        #                                    self.kwargs['parameters']['region'])
+        #
+        #     self.delete_snapshot()
