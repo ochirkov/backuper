@@ -1,18 +1,24 @@
 import abc
 import trafaret as t
+from .exceptions import BackuperNoSnapshotMatchError
 
 
 class ValidateBase(object):
     __metaclass__ = abc.ABCMeta
 
+    def __init__(self):
+        self.tr = t
+
     def action_validate(self, choices, **kwargs):
 
-        action_schema = t.Dict({
-            t.Key('type'): t.String,
-            t.Key('action'): t.Enum(*choices),
-            t.Key('description', optional=True): t.String(max_length=200),
-            t.Key('parameters'): t.Dict().allow_extra("*"),
-            t.Key('filters', optional=True): t.List(t.Dict().allow_extra("*"))
+        action_schema = self.tr.Dict({
+            self.tr.Key('type'): t.String,
+            self.tr.Key('action'): t.Enum(*choices),
+            self.tr.Key('description', optional=True): t.String(
+                max_length=200),
+            self.tr.Key('parameters'): t.Dict().allow_extra("*"),
+            self.tr.Key('filters', optional=True): t.List(
+                t.Dict().allow_extra("*"))
         })
 
         action_schema(kwargs)
@@ -24,16 +30,16 @@ class ValidateBase(object):
 
     def filters_validate(self, **kwargs):
 
-        regex_filter_schema = t.Dict({
-            t.Key('pattern'): t.String,
-            t.Key('type'): t.String
+        regex_filter_schema = self.tr.Dict({
+            t.Key('pattern'): self.tr.String,
+            t.Key('type'): self.tr.String
         })
 
-        age_filter_schema = t.Dict({
-            t.Key('term'): t.String,
-            t.Key('type'): t.String,
-            t.Key('unit'): t.String,
-            t.Key('count'): t.Int
+        age_filter_schema = self.tr.Dict({
+            t.Key('term'): self.tr.String,
+            t.Key('type'): self.tr.String,
+            t.Key('unit'): self.tr.String,
+            t.Key('count'): self.tr.Int
         })
 
         checks = {'regex': regex_filter_schema,
@@ -41,3 +47,9 @@ class ValidateBase(object):
 
         for filter in kwargs['filters']:
             checks[filter['type']](filter)
+
+
+def validate_empty_snapshots(snapshots, msg):
+
+    if not snapshots:
+        raise BackuperNoSnapshotMatchError(msg)

@@ -1,28 +1,22 @@
 import re
 import pytz
 from datetime import datetime
-from .exceptions import BackuperNoSnapshotMatchError
-
-
-def check_snapshot_match(snapshots, msg):
-
-    if not snapshots:
-        raise BackuperNoSnapshotMatchError(msg)
+from backuper.utils.validate import validate_empty_snapshots
 
 
 class BackuperFilter(object):
 
-    def regex_filter(self, pattern, snapshots):
+    def regex_filter(self, filter, snapshots):
 
         filtered = []
 
         for i in snapshots:
-            m = re.match(pattern, i['name'])
+            print(filter['pattern'])
+            m = re.match(filter['pattern'], i['DBSnapshotIdentifier'])
+            if m:
+                filtered.append(i)
 
-        if m:
-            filtered.append(i)
-
-        check_snapshot_match(filtered, 'Any matches by regex filter...')
+        validate_empty_snapshots(filtered, 'Any matches by regex filter...')
 
         return filtered
 
@@ -36,10 +30,10 @@ class BackuperFilter(object):
 
             return delta_days > days
 
-        filtered = [i for i in snapshots if check_days(i['creation_time'], filter['count'])]
+        filtered = [i for i in snapshots if check_days(i['creation_time'],
+                                                       filter['count'])]
 
-
-        check_snapshot_match(filtered, 'Any matches by age filter...')
+        validate_empty_snapshots(filtered, 'Any matches by age filter...')
 
         return filtered
 
