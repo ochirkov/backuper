@@ -179,10 +179,9 @@ class Main(object):
         if self.kwargs['action'] == 'delete':
             snapshots = self.get_snapshots(self.config()['a_region'])
 
-            validate_empty_snapshots(snapshots,
+            validate_empty_snapshots(snapshots['DBSnapshots'],
                                      get_msg(self.config()['a_type']) +
-                      'There are no {} snapshots in {} region...\n'.format(
-                          self.config()['a_snapshot_type'],
+                      'There are no snapshots in {} region...\n'.format(
                           self.config()['a_region']))
 
             if self.config()['a_snapshot_type'] != 'all':
@@ -191,9 +190,12 @@ class Main(object):
             else:
                 snaps_by_type = [i for i in snapshots['DBSnapshots']]
 
-            validate_empty_snapshots(snaps_by_type, 'gggg')
+            validate_empty_snapshots(snaps_by_type,
+                                     get_msg(self.config()['a_type']) +
+                      'There are no {} snapshots in {} region...\n'.format(
+                          self.config()['a_snapshot_type'],
+                          self.config()['a_region']))
 
             snaps_filtered = f_main(self.config()['a_filters'], snaps_by_type)
-            validate_empty_snapshots(snaps_by_type, 'fffff')
 
             self.delete_snapshot(self.config()['a_region'], snaps_filtered)

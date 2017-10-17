@@ -11,7 +11,6 @@ class BackuperFilter(object):
         filtered = []
 
         for i in snapshots:
-            print(filter['pattern'])
             m = re.match(filter['pattern'], i['DBSnapshotIdentifier'])
             if m:
                 filtered.append(i)
