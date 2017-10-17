@@ -17,3 +17,5 @@ time_mapper = {'hours': 3600,
                'days': 86400,
                'weeks': 604800,
                'months': 2592000}
+
+wait_timeout = 4800

@@ -1,7 +1,7 @@
 from backuper.modules.cloud.amazon import get_amazon_client
 from backuper.utils.validate import ValidateBase, validate_empty_snapshots
 from backuper.utils import get_msg
-from backuper.utils.constants import amazon_regions
+from backuper.utils.constants import amazon_regions, wait_timeout
 from backuper.utils.filters import main as f_main
 from time import sleep
 from multiprocessing import Process
@@ -18,7 +18,8 @@ class ValidateRDS(ValidateBase):
                 self.tr.Key('region'): self.tr.String,
                 self.tr.Key('db_identifier'): self.tr.String,
                 self.tr.Key('copy_to_region', optional=True): self.tr.List(
-                    self.tr.String, min_length=1)
+                    self.tr.String, min_length=1),
+                self.tr.Key('wait_timeout', optional=True): self.tr.Int
             })
 
         if kwargs['action'] == 'delete':
@@ -48,7 +49,8 @@ class Main(object):
                       a_type=None,
                       a_copy_to_region=None,
                       a_snapshot_type=None,
-                      a_filters=None)
+                      a_filters=None,
+                      a_wait_timeout=None)
 
         parameters = self.kwargs['parameters']
         params['a_region'] = parameters['region']
@@ -63,6 +65,7 @@ class Main(object):
             params['a_copy_to_region'] = parameters['copy_to_region']
             params['a_snap_id'] = parameters['snapshot_identifier']
             params['a_db_identifier'] = parameters['db_identifier']
+            params['a_wait_timeout'] = parameters.get('wait_timeout')
 
         if self.kwargs['action'] == 'delete':
             params['a_snapshot_type'] = parameters['snapshot_type']
@@ -131,8 +134,10 @@ class Main(object):
 
     def wait_snapshot(self, region, snapshot_identifier):
 
-        counter = 4800
-        #TODO: counter from config
+        if self.config()['a_wait_timeout'] is None:
+            counter = wait_timeout
+        else:
+            counter = self.config()['a_wait_timeout']
 
         while counter >= 0:
 
