@@ -8,7 +8,7 @@ setup(name='backuper',
       author='Chirkov Oleksandr',
       author_email='ironloriin20@gmail.com',
       license='Apache-2.0',
-      scripts=['backuper/bin/backuper'],
+      scripts=['bin/backuper'],
       install_requires=[
         'trafaret==0.12.0',
         'pyyaml==3.12',
