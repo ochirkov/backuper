@@ -132,6 +132,7 @@ class Main(object):
     def wait_snapshot(self, region, snapshot_identifier):
 
         counter = 4800
+        #TODO: counter from config
 
         while counter >= 0:
 
