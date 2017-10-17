@@ -160,6 +160,14 @@ class Main(object):
 
         return filtered
 
+    def adapty_snapshots(self, snapshots):
+
+        for snap in snapshots:
+            snap['snapshot_name'] = snap['DBSnapshotIdentifier']
+            snap['creation_time'] = snap['SnapshotCreateTime']
+
+        return snapshots
+
     def run(self):
 
         if self.kwargs['action'] == 'create':
@@ -197,6 +205,7 @@ class Main(object):
                           self.config()['a_snapshot_type'],
                           self.config()['a_region']))
 
-            snaps_filtered = f_main(self.config()['a_filters'], snaps_by_type)
+            adapted = self.adapty_snapshots(snaps_by_type)
+            snaps_filtered = f_main(self.config()['a_filters'], adapted)
 
             self.delete_snapshot(self.config()['a_region'], snaps_filtered)

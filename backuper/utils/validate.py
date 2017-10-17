@@ -38,7 +38,7 @@ class ValidateBase(object):
         age_filter_schema = self.tr.Dict({
             t.Key('term'): self.tr.String,
             t.Key('type'): self.tr.String,
-            t.Key('unit'): self.tr.String,
+            t.Key('unit'): self.tr.Enum(*['hours', 'days', 'weeks', 'months']),
             t.Key('count'): self.tr.Int
         })
 
