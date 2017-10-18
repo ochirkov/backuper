@@ -22,6 +22,7 @@ setup(name='backuper',
       package_dir={'backuper': 'backuper'},
       packages=['backuper.modules.cloud.digital_ocean',
                 'backuper.modules.cloud.amazon',
+                'backuper.modules.mongodb',
                 'backuper.utils'],
       include_package_data=True,
       zip_safe=False)
