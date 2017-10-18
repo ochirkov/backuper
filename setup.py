@@ -15,7 +15,9 @@ setup(name='backuper',
         'pylint==1.7.1',
         'bumpversion==0.5.3',
         'jinja2==2.9.6',
-        'boto3==1.4.7'
+        'boto3==1.4.7',
+        'pymongo==3.5.1',
+        'pytz==2017.2'
       ],
       package_dir={'backuper': 'backuper'},
       packages=['backuper.modules.cloud.digital_ocean',

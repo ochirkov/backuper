@@ -5,7 +5,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
                     os.path.dirname(os.path.abspath(__file__)), os.pardir))
 
 modules = {
-    'rds': 'backuper.modules.cloud.amazon.rds'
+    'rds': 'backuper.modules.cloud.amazon.rds',
+    'mongodb': 'backuper.modules.mongodb.mongodb'
 }
 
 amazon_regions = ['us-east-2', 'us-east-1', 'us-west-1', 'us-west-2',
@@ -19,3 +20,4 @@ time_mapper = {'hours': 3600,
                'months': 2592000}
 
 wait_timeout = 4800
+mongodb_port = 27017
