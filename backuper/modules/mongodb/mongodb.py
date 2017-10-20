@@ -89,7 +89,7 @@ class Main(object):
 
         print(timeout)
         args = "{command} --path {path} --host {host} --port {port}".format(
-            out=self.config()['a_path'],
+            path=self.config()['a_path'],
             host=self.config()['a_host'],
             port=port,
             command=command
