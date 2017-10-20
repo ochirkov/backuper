@@ -87,13 +87,20 @@ class Main(object):
         else:
             timeout = wait_timeout
 
-        print(timeout)
-        args = "{command} --path {path} --host {host} --port {port}".format(
-            path=self.config()['a_path'],
-            host=self.config()['a_host'],
-            port=port,
-            command=command
-        )
+        if self.kwargs['action'] == 'create':
+            args = "{command} --out {path} --host {host} --port {port}".format(
+                path=self.config()['a_path'],
+                host=self.config()['a_host'],
+                port=port,
+                command=command
+            )
+        if self.kwargs['action'] == 'restore':
+            args = "{command} --host {host} --port {port} {path}".format(
+                path=self.config()['a_path'],
+                host=self.config()['a_host'],
+                port=port,
+                command=command
+            )
 
         if self.config()['a_gzip'] is not None and self.config()['a_gzip']:
             args += ' --gzip'
