@@ -88,7 +88,7 @@ class Main(object):
             timeout = wait_timeout
 
         print(timeout)
-        args = "{command} --out {out} --host {host} --port {port}".format(
+        args = "{command} --path {path} --host {host} --port {port}".format(
             out=self.config()['a_path'],
             host=self.config()['a_host'],
             port=port,
