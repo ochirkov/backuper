@@ -22,6 +22,14 @@ class ValidateRDS(ValidateBase):
                 self.tr.Key('wait_timeout', optional=True): self.tr.Int
             })
 
+        if kwargs['action'] == 'restore':
+
+            parameters_schema = self.tr.Dict({
+                self.tr.Key('snapshot_identifier'): self.tr.String,
+                self.tr.Key('region'): self.tr.String,
+                self.tr.Key('db_identifier'): self.tr.String
+            })
+
         if kwargs['action'] == 'delete':
 
             parameters_schema = self.tr.Dict({
@@ -67,6 +75,11 @@ class Main(object):
             params['a_db_identifier'] = parameters['db_identifier']
             params['a_wait_timeout'] = parameters.get('wait_timeout')
 
+        if self.kwargs['action'] == 'restore':
+            params['a_db_identifier'] = parameters['db_identifier']
+            params['a_snap_id'] = parameters['snapshot_identifier']
+            self.validate.filters_validate(**self.kwargs)
+
         if self.kwargs['action'] == 'delete':
             params['a_snapshot_type'] = parameters['snapshot_type']
             params['a_filters'] = self.kwargs['filters']
@@ -81,16 +94,35 @@ class Main(object):
 
         return response
 
-    def create_snapshot(self):
+    def create_snapshot(self, region):
 
-        c = get_amazon_client(self.config()['a_type'],
-                              self.config()['a_region'])
+        c = get_amazon_client(self.config()['a_type'], region)
         response = c.create_db_snapshot(
             DBSnapshotIdentifier=self.config()['a_snap_id'],
             DBInstanceIdentifier=self.config()['a_db_identifier']
         )
 
         return response
+
+    def restore_from_snapshot(self, region):
+
+        c = get_amazon_client(self.config()['a_type'], region)
+
+        response = c.restore_db_instance_from_db_snapshot(
+            DBSnapshotIdentifier=self.config()['a_snap_id'],
+            DBInstanceIdentifier=self.config()['a_db_identifier']
+        )
+
+        return response
+
+    def instance_is_available(self, region):
+
+        c = get_amazon_client(self.config()['a_type'], region)
+
+        instance = c.describe_db_instances(DBInstanceIdentifier=self.config()['a_db_identifier'])
+        status = instance['DBInstances'][0]['DBInstanceStatus']
+
+        return status
 
     def delete_snapshot(self, region, snapshots):
 
@@ -214,3 +246,11 @@ class Main(object):
             snaps_filtered = f_main(self.config()['a_filters'], adapted)
 
             self.delete_snapshot(self.config()['a_region'], snaps_filtered)
+
+        if self.kwargs['action'] == 'restore':
+            restore_from_snapshot = self.restore_from_snapshot(self.config()['a_region'])
+            print("Instance creation is in progress, keep calm while it takes another minute...")
+            i = 0
+            while i != 'available':
+                i = self.instance_is_available(self.config()['a_region'])
+                sleep(60)
