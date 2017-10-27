@@ -15,8 +15,6 @@ class ValidateBase(object):
             self.tr.Key('type'): t.String,
             self.tr.Key('action'): t.Enum(*choices),
             self.tr.Key('cluster', optional=True): t.Bool,
-            self.tr.Key('description', optional=True): t.String(
-                max_length=200),
             self.tr.Key('parameters'): t.Dict().allow_extra("*"),
             self.tr.Key('filters', optional=True): t.List(
                 t.Dict().allow_extra("*"))

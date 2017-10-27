@@ -1,0 +1,9 @@
+---
+
+type: elasticache
+action: restore
+cluster: False
+parameters:
+  snapshot_id: "test-non-cluster"
+  database_id: "restored-test"
+  region: eu-west-2

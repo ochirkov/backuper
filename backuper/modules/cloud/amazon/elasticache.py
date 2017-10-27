@@ -55,14 +55,12 @@ class Main(object):
                       a_snapshot_type=None,
                       a_filters=None,
                       a_wait_timeout=None,
-                      a_cluster=None,
-                      a_description=None)
+                      a_cluster=None)
 
         parameters = self.kwargs['parameters']
         params['a_region'] = parameters['region']
         params['a_type'] = self.kwargs['type']
         params['a_cluster'] = self.kwargs['cluster']
-        params['a_description'] = self.kwargs['description']
 
         choices = ['create', 'delete', 'restore']
 
@@ -119,6 +117,7 @@ class Main(object):
         response = c.create_replication_group(
             SnapshotName=self.config()['a_snapshot_id'],
             ReplicationGroupId=self.config()['a_database_id'],
+            NumNodeGroups='2',
             ReplicationGroupDescription='[BACKUPER] restored cluster'
         )
         return response
