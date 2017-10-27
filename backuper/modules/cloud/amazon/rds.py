@@ -15,7 +15,7 @@ class ValidateRDS(ValidateBase):
 
             parameters_schema = self.tr.Dict({
                 self.tr.Key('snapshot_identifier'): self.tr.String,
-                self.tr.Key('region'): self.tr.String,
+                self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('db_identifier'): self.tr.String,
                 self.tr.Key('copy_to_region', optional=True): self.tr.List(
                     self.tr.String, min_length=1),
@@ -26,7 +26,7 @@ class ValidateRDS(ValidateBase):
 
             parameters_schema = self.tr.Dict({
                 self.tr.Key('snapshot_identifier'): self.tr.String,
-                self.tr.Key('region'): self.tr.String,
+                self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('db_identifier'): self.tr.String
             })
 
@@ -78,7 +78,6 @@ class Main(object):
         if self.kwargs['action'] == 'restore':
             params['a_db_identifier'] = parameters['db_identifier']
             params['a_snap_id'] = parameters['snapshot_identifier']
-            self.validate.filters_validate(**self.kwargs)
 
         if self.kwargs['action'] == 'delete':
             params['a_snapshot_type'] = parameters['snapshot_type']
