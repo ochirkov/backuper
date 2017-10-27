@@ -6,6 +6,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
 
 modules = {
     'rds': 'backuper.modules.cloud.amazon.rds',
+    'elasticache': 'backuper.modules.cloud.amazon.elasticache',
     'mongodb': 'backuper.modules.mongodb.mongodb'
 }
 

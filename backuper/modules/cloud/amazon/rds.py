@@ -14,9 +14,9 @@ class ValidateRDS(ValidateBase):
         if kwargs['action'] == 'create':
 
             parameters_schema = self.tr.Dict({
-                self.tr.Key('snapshot_identifier'): self.tr.String,
+                self.tr.Key('snapshot_id'): self.tr.String,
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('db_identifier'): self.tr.String,
+                self.tr.Key('database_id'): self.tr.String,
                 self.tr.Key('copy_to_region', optional=True): self.tr.List(
                     self.tr.String, min_length=1),
                 self.tr.Key('wait_timeout', optional=True): self.tr.Int
@@ -25,9 +25,9 @@ class ValidateRDS(ValidateBase):
         if kwargs['action'] == 'restore':
 
             parameters_schema = self.tr.Dict({
-                self.tr.Key('snapshot_identifier'): self.tr.String,
+                self.tr.Key('snapshot_id'): self.tr.String,
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('db_identifier'): self.tr.String
+                self.tr.Key('database_id'): self.tr.String
             })
 
         if kwargs['action'] == 'delete':
@@ -52,17 +52,19 @@ class Main(object):
     def config(self):
 
         params = dict(a_region=None,
-                      a_snap_id=None,
-                      a_db_identifier=None,
+                      a_snapshot_id=None,
+                      a_database_id=None,
                       a_type=None,
                       a_copy_to_region=None,
                       a_snapshot_type=None,
                       a_filters=None,
-                      a_wait_timeout=None)
+                      a_wait_timeout=None,
+                      a_cluster=None)
 
         parameters = self.kwargs['parameters']
         params['a_region'] = parameters['region']
         params['a_type'] = self.kwargs['type']
+        params['a_cluster'] = self.kwargs['cluster']
 
         choices = ['create', 'delete', 'restore']
 
@@ -71,13 +73,13 @@ class Main(object):
 
         if self.kwargs['action'] == 'create':
             params['a_copy_to_region'] = parameters['copy_to_region']
-            params['a_snap_id'] = parameters['snapshot_identifier']
-            params['a_db_identifier'] = parameters['db_identifier']
+            params['a_snapshot_id'] = parameters['snapshot_id']
+            params['a_database_id'] = parameters['database_id']
             params['a_wait_timeout'] = parameters.get('wait_timeout')
 
         if self.kwargs['action'] == 'restore':
-            params['a_db_identifier'] = parameters['db_identifier']
-            params['a_snap_id'] = parameters['snapshot_identifier']
+            params['a_database_id'] = parameters['database_id']
+            params['a_snapshot_id'] = parameters['snapshot_id']
 
         if self.kwargs['action'] == 'delete':
             params['a_snapshot_type'] = parameters['snapshot_type']
@@ -94,22 +96,21 @@ class Main(object):
         return response
 
     def create_snapshot(self, region):
-
-        c = get_amazon_client(self.config()['a_type'], region)
-        response = c.create_db_snapshot(
-            DBSnapshotIdentifier=self.config()['a_snap_id'],
-            DBInstanceIdentifier=self.config()['a_db_identifier']
-        )
-
-        return response
+        if not self.config()['a_cluster']
+            c = get_amazon_client(self.config()['a_type'], region)
+            response = c.create_db_snapshot(
+                DBSnapshotIdentifier=self.config()['a_snapshot_id'],
+                DBInstanceIdentifier=self.config()['a_database_id']
+            )
+            return response
 
     def restore_from_snapshot(self, region):
 
         c = get_amazon_client(self.config()['a_type'], region)
 
         response = c.restore_db_instance_from_db_snapshot(
-            DBSnapshotIdentifier=self.config()['a_snap_id'],
-            DBInstanceIdentifier=self.config()['a_db_identifier']
+            DBSnapshotIdentifier=self.config()['a_snapshot_id'],
+            DBInstanceIdentifier=self.config()['a_database_id']
         )
 
         return response
@@ -118,7 +119,7 @@ class Main(object):
 
         c = get_amazon_client(self.config()['a_type'], region)
 
-        instance = c.describe_db_instances(DBInstanceIdentifier=self.config()['a_db_identifier'])
+        instance = c.describe_db_instances(DBInstanceIdentifier=self.config()['a_database_id'])
         status = instance['DBInstances'][0]['DBInstanceStatus']
 
         return status
@@ -147,7 +148,7 @@ class Main(object):
 
         response = c.copy_db_snapshot(
             SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,
-            TargetDBSnapshotIdentifier=self.config()['a_snap_id'],
+            TargetDBSnapshotIdentifier=self.config()['a_snapshot_id'],
             CopyTags=True,
             SourceRegion=self.config()['a_region']
         )
@@ -163,7 +164,7 @@ class Main(object):
 
         return status
 
-    def wait_snapshot(self, region, snapshot_identifier):
+    def wait_snapshot(self, region, snapshot_id):
 
         if self.config()['a_wait_timeout'] is None:
             counter = wait_timeout
@@ -172,15 +173,15 @@ class Main(object):
 
         while counter >= 0:
 
-            status = self.snapshot_status(region, snapshot_identifier)
+            status = self.snapshot_status(region, snapshot_id)
 
             print(get_msg(self.config()['a_type']) +
                   'Creating of {} is in process in {} region...'.format(
-                snapshot_identifier, region))
+                snapshot_id, region))
             if status == 'available':
                 print(get_msg(self.config()['a_type']) +
                       '{} snapshot is available in {} region...\n'.format(
-                          snapshot_identifier, region))
+                          snapshot_id, region))
                 break
             else:
                 sleep(30)
@@ -210,14 +211,14 @@ class Main(object):
 
             create_r = self.create_snapshot()
             self.wait_snapshot(self.config()['a_region'],
-                               self.config()['a_snap_id'])
+                               self.config()['a_snapshot_id'])
 
             if self.config()['a_copy_to_region'] is not None:
                 jobs = []
                 for region in self.config()['a_copy_to_region']:
                     self.copy_snapshot(create_r, region)
                     p = Process(target=self.wait_snapshot,
-                                args=(region, self.config()['a_snap_id']))
+                                args=(region, self.config()['a_snapshot_id']))
                     jobs.append(p)
                     p.start()
 
