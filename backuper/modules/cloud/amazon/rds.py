@@ -247,11 +247,16 @@ class Main(object):
             self.delete_snapshot(self.config()['a_region'], snaps_filtered)
 
         if self.kwargs['action'] == 'restore':
-            restore_from_snapshot = self.restore_from_snapshot(self.config()['a_region'])
-            print("Instance creation is in progress, keep calm while it takes another minute...")
+            restore_r = self.restore_from_snapshot(self.config()['a_region'])
+            print(get_msg(self.config()['a_type']) +
+                      'Instance creation is in progress in {} region...\n'.format(
+                          self.config()['a_region']))
 
             i = 0
             while i != 'available':
                 i = self.instance_is_available(self.config()['a_region'])
                 sleep(60)
-            print("Instance was restored.")
+            
+            print(get_msg(self.config()['a_type']) +
+                      'Instance was restored in {} region...\n'.format(
+                          self.config()['a_region']))
