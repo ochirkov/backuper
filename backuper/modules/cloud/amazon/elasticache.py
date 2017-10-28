@@ -38,6 +38,8 @@ class ValidateElasticache(ValidateBase):
 
 class Main(object):
     
+    parameters = None
+    
     def __init__(self, **kwargs):
 
         self.kwargs = kwargs
@@ -45,33 +47,33 @@ class Main(object):
   
 
     def create_snapshot(self, region):
-        c = get_amazon_client(parameters['type'], region)
-        if not parameters['cluster']:
+        c = get_amazon_client(self.parameters['type'], region)
+        if not self.parameters['cluster']:
             response = c.create_snapshot(
-                SnapshotName=parameters['snapshot_id'],
-                CacheClusterId=parameters['database_id'] + "-001"
+                SnapshotName=self.parameters['snapshot_id'],
+                CacheClusterId=self.parameters['database_id'] + "-001"
             )
             return response
 
         response = c.create_snapshot(
-                SnapshotName=parameters['snapshot_id'],
-                ReplicationGroupId=parameters['database_id']
+                SnapshotName=self.parameters['snapshot_id'],
+                ReplicationGroupId=self.parameters['database_id']
         )
         return response
 
 
     def restore_from_snapshot(self, region):
-        c = get_amazon_client(parameters['type'], region)
-        if not parameters['cluster']:
+        c = get_amazon_client(self.parameters['type'], region)
+        if not self.parameters['cluster']:
             response = c.create_cache_cluster(
-                SnapshotName=parameters['snapshot_id'],
-                CacheClusterId=parameters['database_id']
+                SnapshotName=self.parameters['snapshot_id'],
+                CacheClusterId=self.parameters['database_id']
             )
             return response
         
         response = c.create_replication_group(
-            SnapshotName=parameters['snapshot_id'],
-            ReplicationGroupId=parameters['database_id'],
+            SnapshotName=self.parameters['snapshot_id'],
+            ReplicationGroupId=self.parameters['database_id'],
             ReplicationGroupDescription='[BACKUPER] restored cluster'
         )
         return response
@@ -111,7 +113,7 @@ class Main(object):
     def run(self):
 
         if self.kwargs['action'] == 'create':
-            create_r = self.create_snapshot(parameters['region'])
+            create_r = self.create_snapshot(self.parameters['region'])
 
         # if self.kwargs['action'] == 'delete':
             # snapshots = self.get_snapshots(parameters['region'])
@@ -139,7 +141,7 @@ class Main(object):
             # self.delete_snapshot(parameters['region'], snaps_filtered)
 
         if self.kwargs['action'] == 'restore':
-            restore_r = self.restore_from_snapshot(parameters['region'])
+            restore_r = self.restore_from_snapshot(self.parameters['region'])
             # print(get_msg(parameters['type']) +
             #           'Instance creation is in progress in {} region...\n'.format(
             #               parameters['region']))
