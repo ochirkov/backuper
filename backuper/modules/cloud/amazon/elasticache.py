@@ -113,7 +113,7 @@ class Main(object):
 
         if self.kwargs['action'] == 'create':
 
-            create_r = self.create_snapshot(parameters['region'])
+            create_r = self.create_snapshot(self.parameters['region'])
 
         # if self.kwargs['action'] == 'delete':
             # snapshots = self.get_snapshots(parameters['region'])
@@ -141,7 +141,7 @@ class Main(object):
             # self.delete_snapshot(parameters['region'], snaps_filtered)
 
         if self.kwargs['action'] == 'restore':
-            restore_r = self.restore_from_snapshot(parameters['region'])
+            restore_r = self.restore_from_snapshot(self.parameters['region'])
             # print(get_msg(parameters['type']) +
             #           'Instance creation is in progress in {} region...\n'.format(
             #               parameters['region']))
