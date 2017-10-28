@@ -39,11 +39,12 @@ class ValidateElasticache(ValidateBase):
 
 class Main(object):
 
+    parameters = self.kwargs['parameters']
+    
     def __init__(self, **kwargs):
 
         self.kwargs = kwargs
         self.validate = ValidateElasticache()
-        parameters = self.kwargs['parameters']
   
 
     def create_snapshot(self, region):
