@@ -4,6 +4,8 @@ type: elasticache
 action: restore
 cluster: False
 parameters:
-  snapshot_id: "test-non-cluster"
-  database_id: "restored-test"
-  region: eu-west-2
+  snapshot_id: "{{ snapshot-id }}"
+  database_id: "{{ database-id }}"
+  region: "{{ region }}"
+  engine_id: "{{ engine-id }}"
+  node_type: "{{ node-type }}"

@@ -23,7 +23,9 @@ class ValidateElasticache(ValidateBase):
             parameters_schema = self.tr.Dict({
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('snapshot_id'): self.tr.String,
-                self.tr.Key('database_id'): self.tr.String
+                self.tr.Key('database_id'): self.tr.String,
+                self.tr.Key('engine_id'): self.tr.String,
+                self.tr.Key('node_type'): self.tr.String
             })
 
         if kwargs['action'] == 'delete':
@@ -43,80 +45,39 @@ class Main(object):
 
         self.kwargs = kwargs
         self.validate = ValidateElasticache()
-        self.config()
-
-    def config(self):
-
-        params = dict(a_region=None,
-                      a_snapshot_id=None,
-                      a_database_id=None,
-                      a_type=None,
-                      a_copy_to_region=None,
-                      a_snapshot_type=None,
-                      a_filters=None,
-                      a_wait_timeout=None,
-                      a_cluster=None)
-
         parameters = self.kwargs['parameters']
-        params['a_region'] = parameters['region']
-        params['a_type'] = self.kwargs['type']
-        params['a_cluster'] = self.kwargs['cluster']
-
-        choices = ['create', 'delete', 'restore']
-
-        self.validate.action_validate(choices, **self.kwargs)
-        self.validate.params_validate(**self.kwargs)
-
-        if self.kwargs['action'] == 'create':
-            params['a_snapshot_id'] = parameters['snapshot_id']
-            params['a_database_id'] = parameters['database_id']
-
-        if self.kwargs['action'] == 'restore':
-            params['a_database_id'] = parameters['database_id']
-            params['a_snapshot_id'] = parameters['snapshot_id']
-
-        if self.kwargs['action'] == 'delete':
-            params['a_snapshot_type'] = parameters['snapshot_type']
-            params['a_filters'] = self.kwargs['filters']
-            self.validate.filters_validate(**self.kwargs)
-
-        return params
-
-    # def get_snapshots(self, region):
-
-    #     c = get_amazon_client(self.config()['a_type'], region)
-    #     response = c.describe_snapshots()
-
-    #     return response
+  
 
     def create_snapshot(self, region):
-        c = get_amazon_client(self.config()['a_type'], region)
-        if not self.config()['a_cluster']:
+        c = get_amazon_client(parameters['type'], region)
+        if not parameters['cluster']:
             response = c.create_snapshot(
-                SnapshotName=self.config()['a_snapshot_id'],
-                CacheClusterId=self.config()['a_database_id'] + "-001"
+                SnapshotName=parameters['snapshot_id'],
+                CacheClusterId=parameters['database_id'] + "-001"
             )
             return response
 
         response = c.create_snapshot(
-                SnapshotName=self.config()['a_snapshot_id'],
-                ReplicationGroupId=self.config()['a_database_id']
+                SnapshotName=parameters['snapshot_id'],
+                ReplicationGroupId=parameters['database_id']
         )
         return response
 
 
     def restore_from_snapshot(self, region):
-        c = get_amazon_client(self.config()['a_type'], region)
-        if not self.config()['a_cluster']:
+        c = get_amazon_client(parameters['type'], region)
+        if not parameters['cluster']:
             response = c.create_cache_cluster(
-                SnapshotName=self.config()['a_snapshot_id'],
-                CacheClusterId=self.config()['a_database_id']
+                SnapshotName=parameters['snapshot_id'],
+                CacheClusterId=parameters['database_id'],
+                EngineVersion=parameters['engine_id'],
+                CacheNodeType=parameters['node_type']
             )
             return response
         
         response = c.create_replication_group(
-            SnapshotName=self.config()['a_snapshot_id'],
-            ReplicationGroupId=self.config()['a_database_id'],
+            SnapshotName=parameters['snapshot_id'],
+            ReplicationGroupId=parameters['database_id'],
             NumNodeGroups='2',
             ReplicationGroupDescription='[BACKUPER] restored cluster'
         )
@@ -124,14 +85,14 @@ class Main(object):
 
     def delete_snapshot(self, region, snapshots):
 
-        c = get_amazon_client(self.config()['a_type'], region)
+        c = get_amazon_client(parameters['type'], region)
 
         r = []
         for i in snapshots:
             response = c.delete_snapshot(
                 DBSnapshotIdentifier=i['DBSnapshotIdentifier']
             )
-            print(get_msg(self.config()['a_type']) +
+            print(get_msg(parameters['type']) +
                   'Deleting snapshot {} in {} region...'.format(
                 i['DBSnapshotIdentifier'], region))
             r.append(response)
@@ -142,13 +103,13 @@ class Main(object):
 
         SourceDBSnapshotIdentifier = resource['DBSnapshot']['DBSnapshotArn']
 
-        c = get_amazon_client(self.config()['a_type'], region)
+        c = get_amazon_client(parameters['type'], region)
 
         response = c.copy_snapshot(
             SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,
-            TargetDBSnapshotIdentifier=self.config()['a_snapshot_id'],
+            TargetDBSnapshotIdentifier=parameters['snapshot_id'],
             CopyTags=True,
-            SourceRegion=self.config()['a_region']
+            SourceRegion=parameters['region']
         )
 
         return response
@@ -158,44 +119,44 @@ class Main(object):
 
         if self.kwargs['action'] == 'create':
 
-            create_r = self.create_snapshot(self.config()['a_region'])
+            create_r = self.create_snapshot(parameters['region'])
 
         # if self.kwargs['action'] == 'delete':
-            # snapshots = self.get_snapshots(self.config()['a_region'])
+            # snapshots = self.get_snapshots(parameters['region'])
 
             # validate_empty_snapshots(snapshots['DBSnapshots'],
-            #                          get_msg(self.config()['a_type']) +
+            #                          get_msg(parameters['type']) +
             #           'There are no snapshots in {} region...\n'.format(
-            #               self.config()['a_region']))
+            #               parameters['region']))
 
-            # if self.config()['a_snapshot_type'] != 'all':
+            # if parameters['snapshot_type'] != 'all':
             #     snaps_by_type = self.filter_snaps_by_type(snapshots,
-            #                                 self.config()['a_snapshot_type'])
+            #                                 parameters['snapshot_type'])
             # else:
             #     snaps_by_type = [i for i in snapshots['DBSnapshots']]
 
             # validate_empty_snapshots(snaps_by_type,
-            #                          get_msg(self.config()['a_type']) +
+            #                          get_msg(parameters['type']) +
             #           'There are no {} snapshots in {} region...\n'.format(
-            #               self.config()['a_snapshot_type'],
-            #               self.config()['a_region']))
+            #               parameters['snapshot_type'],
+            #               parameters['region']))
 
             # adapted = self.adapty_snapshots(snaps_by_type)
-            # snaps_filtered = f_main(self.config()['a_filters'], adapted)
+            # snaps_filtered = f_main(parameters['filters'], adapted)
 
-            # self.delete_snapshot(self.config()['a_region'], snaps_filtered)
+            # self.delete_snapshot(parameters['region'], snaps_filtered)
 
         if self.kwargs['action'] == 'restore':
-            restore_r = self.restore_from_snapshot(self.config()['a_region'])
-            # print(get_msg(self.config()['a_type']) +
+            restore_r = self.restore_from_snapshot(parameters['region'])
+            # print(get_msg(parameters['type']) +
             #           'Instance creation is in progress in {} region...\n'.format(
-            #               self.config()['a_region']))
+            #               parameters['region']))
 
             # i = 0
             # while i != 'available':
-            #     i = self.instance_is_available(self.config()['a_region'])
+            #     i = self.instance_is_available(parameters['region'])
             #     sleep(60)
             
-            # print(get_msg(self.config()['a_type']) +
+            # print(get_msg(parameters['type']) +
             #           'Instance was restored in {} region...\n'.format(
-            #               self.config()['a_region']))
+            #               parameters['region']))
