@@ -63,8 +63,8 @@ class Main(object):
 
     def restore_from_snapshot(self, region):
         
-        c = get_amazon_client(self.parameters['type'], region)
-        if not self.parameters['cluster']:
+        c = get_amazon_client(self.kwargs['type'], region)
+        if not self.kwargs['cluster']:
             response = c.create_cache_cluster(
                 SnapshotName=self.parameters['snapshot_id'],
                 CacheClusterId=self.parameters['database_id']
