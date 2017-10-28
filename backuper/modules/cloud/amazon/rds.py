@@ -58,13 +58,11 @@ class Main(object):
                       a_copy_to_region=None,
                       a_snapshot_type=None,
                       a_filters=None,
-                      a_wait_timeout=None,
-                      a_cluster=None)
+                      a_wait_timeout=None)
 
         parameters = self.kwargs['parameters']
         params['a_region'] = parameters['region']
         params['a_type'] = self.kwargs['type']
-        params['a_cluster'] = self.kwargs['cluster']
 
         choices = ['create', 'delete', 'restore']
 
@@ -96,13 +94,12 @@ class Main(object):
         return response
 
     def create_snapshot(self, region):
-        if not self.config()['a_cluster']
-            c = get_amazon_client(self.config()['a_type'], region)
-            response = c.create_db_snapshot(
-                DBSnapshotIdentifier=self.config()['a_snapshot_id'],
-                DBInstanceIdentifier=self.config()['a_database_id']
-            )
-            return response
+        c = get_amazon_client(self.config()['a_type'], region)
+        response = c.create_db_snapshot(
+            DBSnapshotIdentifier=self.config()['a_snapshot_id'],
+            DBInstanceIdentifier=self.config()['a_database_id']
+        )
+        return response
 
     def restore_from_snapshot(self, region):
 

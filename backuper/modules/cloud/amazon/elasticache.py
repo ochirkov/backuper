@@ -46,35 +46,19 @@ class Main(object):
   
 
     def create_snapshot(self, region):
-        c = get_amazon_client(self.parameters['type'], region)
-        if not self.parameters['cluster']:
-            response = c.create_snapshot(
-                SnapshotName=self.parameters['snapshot_id'],
-                CacheClusterId=self.parameters['database_id'] + "-001"
-            )
-            return response
-
+        c = get_amazon_client(self.kwargs['type'], region)
         response = c.create_snapshot(
-                SnapshotName=self.parameters['snapshot_id'],
-                ReplicationGroupId=self.parameters['database_id']
+            SnapshotName=self.parameters['snapshot_id'],
+            CacheClusterId=self.parameters['database_id']
         )
         return response
 
 
     def restore_from_snapshot(self, region):
-        
         c = get_amazon_client(self.kwargs['type'], region)
-        if not self.kwargs['cluster']:
-            response = c.create_cache_cluster(
-                SnapshotName=self.parameters['snapshot_id'],
-                CacheClusterId=self.parameters['database_id']
-            )
-            return response
-        
-        response = c.create_replication_group(
+        response = c.create_cache_cluster(
             SnapshotName=self.parameters['snapshot_id'],
-            ReplicationGroupId=self.parameters['database_id'],
-            ReplicationGroupDescription='[BACKUPER] restored cluster'
+            CacheClusterId=self.parameters['database_id']
         )
         return response
 

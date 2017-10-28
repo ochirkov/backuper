@@ -14,7 +14,6 @@ class ValidateBase(object):
         action_schema = self.tr.Dict({
             self.tr.Key('type'): t.String,
             self.tr.Key('action'): t.Enum(*choices),
-            self.tr.Key('cluster', optional=True): t.Bool,
             self.tr.Key('parameters'): t.Dict().allow_extra("*"),
             self.tr.Key('filters', optional=True): t.List(
                 t.Dict().allow_extra("*"))
