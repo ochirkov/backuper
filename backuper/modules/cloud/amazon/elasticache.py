@@ -26,89 +26,87 @@ class ValidateElasticache(ValidateBase):
                 self.tr.Key('database_id'): self.tr.String
             })
 
-        if kwargs['action'] == 'delete':
+        # if kwargs['action'] == 'delete':
 
-            parameters_schema = self.tr.Dict({
-                self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('snapshot_type'): self.tr.Enum(
-                    *['standard', 'manual', 'all'])
-            })
+        #     parameters_schema = self.tr.Dict({
+        #         self.tr.Key('region'): self.tr.Enum(*amazon_regions),
+        #         self.tr.Key('snapshot_type'): self.tr.Enum(
+        #             *['standard', 'manual', 'all'])
+        #     })
 
-        parameters_schema(kwargs['parameters'])
-
+        return parameters_schema(kwargs['parameters'])
 
 class Main(object):
-
-    parameters = self.kwargs['parameters']
     
+
     def __init__(self, **kwargs):
 
         self.kwargs = kwargs
-        self.validate = ValidateElasticache()
+        self.parameters = ValidateElasticache()
   
 
     def create_snapshot(self, region):
-        c = get_amazon_client(parameters['type'], region)
-        if not parameters['cluster']:
+        c = get_amazon_client(self.parameters['type'], region)
+        if not self.parameters['cluster']:
             response = c.create_snapshot(
-                SnapshotName=parameters['snapshot_id'],
-                CacheClusterId=parameters['database_id'] + "-001"
+                SnapshotName=self.parameters['snapshot_id'],
+                CacheClusterId=self.parameters['database_id'] + "-001"
             )
             return response
 
         response = c.create_snapshot(
-                SnapshotName=parameters['snapshot_id'],
-                ReplicationGroupId=parameters['database_id']
+                SnapshotName=self.parameters['snapshot_id'],
+                ReplicationGroupId=self.parameters['database_id']
         )
         return response
 
 
     def restore_from_snapshot(self, region):
-        c = get_amazon_client(parameters['type'], region)
-        if not parameters['cluster']:
+        c = get_amazon_client(self.parameters['type'], region)
+        if not self.parameters['cluster']:
             response = c.create_cache_cluster(
-                SnapshotName=parameters['snapshot_id'],
-                CacheClusterId=parameters['database_id']
+                SnapshotName=self.parameters['snapshot_id'],
+                CacheClusterId=self.parameters['database_id']
             )
             return response
         
         response = c.create_replication_group(
-            SnapshotName=parameters['snapshot_id'],
-            ReplicationGroupId=parameters['database_id'],
+            SnapshotName=self.parameters['snapshot_id'],
+            ReplicationGroupId=self.parameters['database_id'],
             ReplicationGroupDescription='[BACKUPER] restored cluster'
         )
         return response
 
-    def delete_snapshot(self, region, snapshots):
+    # def delete_snapshot(self, region, snapshots):
 
-        c = get_amazon_client(parameters['type'], region)
+    #     c = get_amazon_client(parameters['type'], region)
 
-        r = []
-        for i in snapshots:
-            response = c.delete_snapshot(
-                DBSnapshotIdentifier=i['DBSnapshotIdentifier']
-            )
-            print(get_msg(parameters['type']) +
-                  'Deleting snapshot {} in {} region...'.format(
-                i['DBSnapshotIdentifier'], region))
-            r.append(response)
+    #     r = []
+    #     for i in snapshots:
+    #         response = c.delete_snapshot(
+    #             DBSnapshotIdentifier=i['DBSnapshotIdentifier']
+    #         )
+    #         print(get_msg(parameters['type']) +
+    #               'Deleting snapshot {} in {} region...'.format(
+    #             i['DBSnapshotIdentifier'], region))
+    #         r.append(response)
 
-        return r
+    #     return r
 
-    def copy_snapshot(self, resource, region):
+    # def copy_snapshot(self, resource, region):
 
-        SourceDBSnapshotIdentifier = resource['DBSnapshot']['DBSnapshotArn']
+    #     SourceDBSnapshotIdentifier = resource['DBSnapshot']['DBSnapshotArn']
 
-        c = get_amazon_client(parameters['type'], region)
+    #     c = get_amazon_client(parameters['type'], region)
 
-        response = c.copy_snapshot(
-            SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,
-            TargetDBSnapshotIdentifier=parameters['snapshot_id'],
-            CopyTags=True,
-            SourceRegion=parameters['region']
-        )
+    #     response = c.copy_snapshot(
+    #         SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,
+    #         TargetDBSnapshotIdentifier=parameters['snapshot_id'],
+    #         CopyTags=True,
+    #         SourceRegion=parameters['region']
+    #     )
 
-        return response
+    #     return response
 
 
     def run(self):
