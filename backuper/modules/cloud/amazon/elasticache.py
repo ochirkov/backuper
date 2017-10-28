@@ -26,24 +26,23 @@ class ValidateElasticache(ValidateBase):
                 self.tr.Key('database_id'): self.tr.String
             })
 
-        # if kwargs['action'] == 'delete':
+        if kwargs['action'] == 'delete':
 
-        #     parameters_schema = self.tr.Dict({
-        #         self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-        #         self.tr.Key('snapshot_type'): self.tr.Enum(
-        #             *['standard', 'manual', 'all'])
-        #     })
+            parameters_schema = self.tr.Dict({
+                self.tr.Key('region'): self.tr.Enum(*amazon_regions),
+                self.tr.Key('snapshot_type'): self.tr.Enum(
+                    *['standard', 'manual', 'all'])
+            })
 
-        print parameters_schema(kwargs['parameters'])
+        parameters_schema(kwargs['parameters'])
+
 
 class Main(object):
-    
-    parameters = None
-    
-    def __init__(self, **kwargs):
 
+    def __init__(self, **kwargs):
         self.kwargs = kwargs
-        self.parameters = ValidateElasticache()
+        self.parameters = kwargs['parameters']
+        self.validate = ValidateElasticache()
   
 
     def create_snapshot(self, region):
@@ -113,6 +112,7 @@ class Main(object):
     def run(self):
 
         if self.kwargs['action'] == 'create':
+
             create_r = self.create_snapshot(self.parameters['region'])
 
         # if self.kwargs['action'] == 'delete':
