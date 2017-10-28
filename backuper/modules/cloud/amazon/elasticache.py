@@ -41,7 +41,7 @@ class Main(object):
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs
-        self.parameters = kwargs['parameters']
+        self.parameters = self.kwargs['parameters']
         self.validate = ValidateElasticache()
   
 
@@ -62,6 +62,7 @@ class Main(object):
 
 
     def restore_from_snapshot(self, region):
+        
         c = get_amazon_client(self.parameters['type'], region)
         if not self.parameters['cluster']:
             response = c.create_cache_cluster(
