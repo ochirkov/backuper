@@ -7,5 +7,3 @@ parameters:
   snapshot_id: "test-non-cluster"
   database_id: "restored-test-non-cluster"
   region: "eu-west-2"
-  engine_id: "{{ engine-id }}"
-  node_type: "{{ node-type }}"

@@ -23,9 +23,7 @@ class ValidateElasticache(ValidateBase):
             parameters_schema = self.tr.Dict({
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('snapshot_id'): self.tr.String,
-                self.tr.Key('database_id'): self.tr.String,
-                self.tr.Key('engine_id'): self.tr.String,
-                self.tr.Key('node_type'): self.tr.String
+                self.tr.Key('database_id'): self.tr.String
             })
 
         if kwargs['action'] == 'delete':
@@ -69,16 +67,13 @@ class Main(object):
         if not parameters['cluster']:
             response = c.create_cache_cluster(
                 SnapshotName=parameters['snapshot_id'],
-                CacheClusterId=parameters['database_id'],
-                EngineVersion=parameters['engine_id'],
-                CacheNodeType=parameters['node_type']
+                CacheClusterId=parameters['database_id']
             )
             return response
         
         response = c.create_replication_group(
             SnapshotName=parameters['snapshot_id'],
             ReplicationGroupId=parameters['database_id'],
-            NumNodeGroups='2',
             ReplicationGroupDescription='[BACKUPER] restored cluster'
         )
         return response
