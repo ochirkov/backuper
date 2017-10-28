@@ -34,7 +34,7 @@ class ValidateElasticache(ValidateBase):
         #             *['standard', 'manual', 'all'])
         #     })
 
-        parameters_schema(kwargs['parameters'])
+        print parameters_schema(kwargs['parameters'])
 
 class Main(object):
     
