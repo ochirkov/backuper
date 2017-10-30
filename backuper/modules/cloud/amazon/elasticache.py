@@ -1,17 +1,15 @@
 from backuper.modules.cloud.amazon import get_amazon_client
-from backuper.utils.validate import ValidateBase, validate_empty_snapshots
+from backuper.utils.validate import ValidateBase
 from backuper.utils import get_msg
-from backuper.utils.constants import amazon_regions, wait_timeout
-from backuper.utils.filters import main as f_main
+from backuper.utils.constants import amazon_regions
 from time import sleep
-from multiprocessing import Process
+
 
 class ValidateElasticache(ValidateBase):
 
     def params_validate(self, **kwargs):
-
+        
         if kwargs['action'] == 'create':
-
             parameters_schema = self.tr.Dict({
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('snapshot_id'): self.tr.String,
@@ -19,7 +17,6 @@ class ValidateElasticache(ValidateBase):
             })
 
         if kwargs['action'] == 'restore':
-
             parameters_schema = self.tr.Dict({
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('snapshot_id'): self.tr.String,
@@ -27,13 +24,10 @@ class ValidateElasticache(ValidateBase):
             })
 
         if kwargs['action'] == 'delete':
-
             parameters_schema = self.tr.Dict({
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('snapshot_type'): self.tr.Enum(
-                    *['standard', 'manual', 'all'])
+                self.tr.Key('snapshot_id'): self.tr.String
             })
-
         parameters_schema(kwargs['parameters'])
 
 
@@ -43,99 +37,61 @@ class Main(object):
         self.kwargs = kwargs
         self.parameters = self.kwargs['parameters']
         self.validate = ValidateElasticache()
-  
 
-    def create_snapshot(self, region):
-        c = get_amazon_client(self.kwargs['type'], region)
+    def create_snapshot(self):
+        c = get_amazon_client(self.kwargs['type'], self.kwargs['region'])
         response = c.create_snapshot(
             SnapshotName=self.parameters['snapshot_id'],
             CacheClusterId=self.parameters['database_id']
         )
         return response
 
-
-    def restore_from_snapshot(self, region):
-        c = get_amazon_client(self.kwargs['type'], region)
+    def restore_from_snapshot(self):
+        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
         response = c.create_cache_cluster(
             SnapshotName=self.parameters['snapshot_id'],
             CacheClusterId=self.parameters['database_id']
         )
         return response
 
-    # def delete_snapshot(self, region, snapshots):
+    def delete_snapshot(self):
+        c = get_amazon_client(parameters['type'], self.parameters['region'])
+        response = c.delete_snapshot(
+            SnapshotName=self.parameters['snapshot_id']
+        )
+        return response
 
-    #     c = get_amazon_client(parameters['type'], region)
+    def snapshot_is_available(self):
+        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
+        response = c.describe_snapshots(SnapshotName=self.parameters['snapshot_id'])
+        response_status = response['Snapshots'][0]['SnapshotStatus']
+        return response_status
 
-    #     r = []
-    #     for i in snapshots:
-    #         response = c.delete_snapshot(
-    #             DBSnapshotIdentifier=i['DBSnapshotIdentifier']
-    #         )
-    #         print(get_msg(parameters['type']) +
-    #               'Deleting snapshot {} in {} region...'.format(
-    #             i['DBSnapshotIdentifier'], region))
-    #         r.append(response)
-
-    #     return r
-
-    # def copy_snapshot(self, resource, region):
-
-    #     SourceDBSnapshotIdentifier = resource['DBSnapshot']['DBSnapshotArn']
-
-    #     c = get_amazon_client(parameters['type'], region)
-
-    #     response = c.copy_snapshot(
-    #         SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,
-    #         TargetDBSnapshotIdentifier=parameters['snapshot_id'],
-    #         CopyTags=True,
-    #         SourceRegion=parameters['region']
-    #     )
-
-    #     return response
-
+    def cache_cluster_is_available(self):
+        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
+        response = c.describe_cache_clusters(CacheClusterId=self.parameters['database_id'])
+        response_status = response['CacheClusters'][0]['CacheClusterStatus']
+        return response_status
 
     def run(self):
 
-        if self.kwargs['action'] == 'create':
-
-            create_r = self.create_snapshot(self.parameters['region'])
-
-        # if self.kwargs['action'] == 'delete':
-            # snapshots = self.get_snapshots(parameters['region'])
-
-            # validate_empty_snapshots(snapshots['DBSnapshots'],
-            #                          get_msg(parameters['type']) +
-            #           'There are no snapshots in {} region...\n'.format(
-            #               parameters['region']))
-
-            # if parameters['snapshot_type'] != 'all':
-            #     snaps_by_type = self.filter_snaps_by_type(snapshots,
-            #                                 parameters['snapshot_type'])
-            # else:
-            #     snaps_by_type = [i for i in snapshots['DBSnapshots']]
-
-            # validate_empty_snapshots(snaps_by_type,
-            #                          get_msg(parameters['type']) +
-            #           'There are no {} snapshots in {} region...\n'.format(
-            #               parameters['snapshot_type'],
-            #               parameters['region']))
-
-            # adapted = self.adapty_snapshots(snaps_by_type)
-            # snaps_filtered = f_main(parameters['filters'], adapted)
-
-            # self.delete_snapshot(parameters['region'], snaps_filtered)
+        if self.kwargs['action'] == 'create':            
+            action = self.create_snapshot()
+            print(get_msg(kwargs['type']) + kwargs['action'] + 'is in progress...\n')
+            i = 0
+            while i != 'available':
+                i = self.snapshot_is_available(parameters['region'])
+                sleep(60)
 
         if self.kwargs['action'] == 'restore':
-            restore_r = self.restore_from_snapshot(self.parameters['region'])
-            # print(get_msg(parameters['type']) +
-            #           'Instance creation is in progress in {} region...\n'.format(
-            #               parameters['region']))
-
-            # i = 0
-            # while i != 'available':
-            #     i = self.instance_is_available(parameters['region'])
-            #     sleep(60)
-            
-            # print(get_msg(parameters['type']) +
-            #           'Instance was restored in {} region...\n'.format(
-            #               parameters['region']))
+            action = self.restore_from_snapshot()
+            print(get_msg(kwargs['type']) + kwargs['action'] + 'is in progress...\n')
+            i = 0
+            while i != 'available':
+                i = self.cache_cluster_is_available(parameters['region'])
+                sleep(60)
+        
+        if self.kwargs['action'] == 'delete':
+            action = self.delete_snapshot()
+        
+        print(get_msg(kwargs['type']) + kwargs['action'] + 'completed in {} region...\n'.format(parameters['region']))
