@@ -3,6 +3,6 @@
 type: elasticache
 action: restore
 parameters:
-  snapshot_id: "test-non-cluster"
-  database_id: "restored-test-non-cluster"
-  region: "eu-west-2"
+  snapshot_id: ""
+  database_id: ""
+  region: ""
