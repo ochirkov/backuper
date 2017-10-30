@@ -1,8 +1,8 @@
+from time import sleep
 from backuper.modules.cloud.amazon import get_amazon_client
-from backuper.utils.validate import ValidateBase
 from backuper.utils import get_msg
 from backuper.utils.constants import amazon_regions
-from time import sleep
+from backuper.utils.validate import ValidateBase
 
 
 class ValidateElasticache(ValidateBase):
@@ -39,7 +39,7 @@ class Main(object):
         self.validate = ValidateElasticache()
 
     def create_snapshot(self):
-        c = get_amazon_client(self.kwargs['type'], self.kwargs['region'])
+        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
         response = c.create_snapshot(
             SnapshotName=self.parameters['snapshot_id'],
             CacheClusterId=self.parameters['database_id']
@@ -55,7 +55,7 @@ class Main(object):
         return response
 
     def delete_snapshot(self):
-        c = get_amazon_client(parameters['type'], self.parameters['region'])
+        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
         response = c.delete_snapshot(
             SnapshotName=self.parameters['snapshot_id']
         )
@@ -68,7 +68,7 @@ class Main(object):
         response_status = response['Snapshots'][0]['SnapshotStatus']
         return response_status
 
-    def cache_cluster_is_available(self):
+    def cache_cluster_is_available(self):  
         c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
         response = c.describe_cache_clusters(
             CacheClusterId=self.parameters['database_id'])
@@ -79,24 +79,24 @@ class Main(object):
 
         if self.kwargs['action'] == 'create':
             action = self.create_snapshot()
-            print(get_msg(kwargs['type']) +
-                  kwargs['action'] + 'is in progress...\n')
+            print(get_msg(self.kwargs['type']) +
+                  self.kwargs['action'] + 'is in progress...\n')
             i = 0
             while i != 'available':
-                i = self.snapshot_is_available(parameters['region'])
+                i = self.snapshot_is_available()
                 sleep(60)
 
         if self.kwargs['action'] == 'restore':
             action = self.restore_from_snapshot()
-            print(get_msg(kwargs['type']) +
-                  kwargs['action'] + 'is in progress...\n')
+            print(get_msg(self.kwargs['type']) +
+                  self.kwargs['action'] + 'is in progress...\n')
             i = 0
             while i != 'available':
-                i = self.cache_cluster_is_available(parameters['region'])
+                i = self.cache_cluster_is_available()
                 sleep(60)
 
         if self.kwargs['action'] == 'delete':
             action = self.delete_snapshot()
 
-        print(get_msg(kwargs['type']) + kwargs['action'] +
-              'completed in {} region...\n'.format(parameters['region']))
+        print(get_msg(self.kwargs['type']) + self.kwargs['action'] +
+              'completed in {} region...\n'.format(self.parameters['region']))
