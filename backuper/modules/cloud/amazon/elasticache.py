@@ -37,40 +37,37 @@ class Main(object):
         self.kwargs = kwargs
         self.parameters = self.kwargs['parameters']
         self.validate = ValidateElasticache()
+        self.client = get_amazon_client(
+            self.kwargs['type'], self.parameters['region'])
 
     def create_snapshot(self):
-        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
-        response = c.create_snapshot(
+        response = self.client.create_snapshot(
             SnapshotName=self.parameters['snapshot_id'],
             CacheClusterId=self.parameters['database_id']
         )
         return response
 
     def restore_from_snapshot(self):
-        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
-        response = c.create_cache_cluster(
+        response = self.client.create_cache_cluster(
             SnapshotName=self.parameters['snapshot_id'],
             CacheClusterId=self.parameters['database_id']
         )
         return response
 
     def delete_snapshot(self):
-        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
-        response = c.delete_snapshot(
+        response = self.client.delete_snapshot(
             SnapshotName=self.parameters['snapshot_id']
         )
         return response
 
     def snapshot_is_available(self):
-        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
-        response = c.describe_snapshots(
+        response = self.client.describe_snapshots(
             SnapshotName=self.parameters['snapshot_id'])
         response_status = response['Snapshots'][0]['SnapshotStatus']
         return response_status
 
-    def cache_cluster_is_available(self):  
-        c = get_amazon_client(self.kwargs['type'], self.parameters['region'])
-        response = c.describe_cache_clusters(
+    def cache_cluster_is_available(self):
+        response = self.client.describe_cache_clusters(
             CacheClusterId=self.parameters['database_id'])
         response_status = response['CacheClusters'][0]['CacheClusterStatus']
         return response_status
@@ -78,7 +75,7 @@ class Main(object):
     def run(self):
 
         if self.kwargs['action'] == 'create':
-            action = self.create_snapshot()
+            self.create_snapshot()
             print(get_msg(self.kwargs['type']) +
                   self.kwargs['action'] + ' is in progress...\n')
             i = 0
@@ -87,7 +84,7 @@ class Main(object):
                 sleep(60)
 
         if self.kwargs['action'] == 'restore':
-            action = self.restore_from_snapshot()
+            self.restore_from_snapshot()
             print(get_msg(self.kwargs['type']) +
                   self.kwargs['action'] + ' is in progress...\n')
             i = 0
@@ -96,7 +93,7 @@ class Main(object):
                 sleep(60)
 
         if self.kwargs['action'] == 'delete':
-            action = self.delete_snapshot()
+            self.delete_snapshot()
 
         print(get_msg(self.kwargs['type']) + self.kwargs['action'] +
               ' completed in {} region...\n'.format(self.parameters['region']))
