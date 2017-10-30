@@ -1,0 +1,8 @@
+---
+
+type: elasticache
+action: restore
+parameters:
+  snapshot_id: ""
+  database_id: ""
+  region: ""
