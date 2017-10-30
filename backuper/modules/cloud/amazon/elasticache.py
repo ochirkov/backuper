@@ -80,7 +80,7 @@ class Main(object):
         if self.kwargs['action'] == 'create':
             action = self.create_snapshot()
             print(get_msg(self.kwargs['type']) +
-                  self.kwargs['action'] + 'is in progress...\n')
+                  self.kwargs['action'] + ' is in progress...\n')
             i = 0
             while i != 'available':
                 i = self.snapshot_is_available()
@@ -89,7 +89,7 @@ class Main(object):
         if self.kwargs['action'] == 'restore':
             action = self.restore_from_snapshot()
             print(get_msg(self.kwargs['type']) +
-                  self.kwargs['action'] + 'is in progress...\n')
+                  self.kwargs['action'] + ' is in progress...\n')
             i = 0
             while i != 'available':
                 i = self.cache_cluster_is_available()
@@ -99,4 +99,4 @@ class Main(object):
             action = self.delete_snapshot()
 
         print(get_msg(self.kwargs['type']) + self.kwargs['action'] +
-              'completed in {} region...\n'.format(self.parameters['region']))
+              ' completed in {} region...\n'.format(self.parameters['region']))
