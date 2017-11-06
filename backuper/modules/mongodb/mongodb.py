@@ -1,6 +1,6 @@
 from backuper.utils.validate import ValidateBase
 from backuper.utils import get_msg
-from backuper.utils.constants import wait_timeout, mongodb_port
+from backuper.utils.constants import waitTimeout, mongodbPort
 from backuper.utils.filters import main as f_main
 from subprocess import Popen, PIPE
 
@@ -16,7 +16,7 @@ class ValidateMongo(ValidateBase):
             self.tr.Key('collection', optional=True): self.tr.String,
             self.tr.Key('gzip'): self.tr.Bool,
             self.tr.Key('path'): self.tr.String,
-            self.tr.Key('wait_timeout', optional=True): self.tr.Int
+            self.tr.Key('waitTimeout', optional=True): self.tr.Int
         })
 
         parameters_schema(kwargs['parameters'])
@@ -39,7 +39,7 @@ class Main(object):
                       a_collection=None,
                       a_gzip=None,
                       a_path=None,
-                      a_wait_timeout=None)
+                      a_waitTimeout=None)
 
         choices = ['create', 'restore']
 
@@ -52,7 +52,7 @@ class Main(object):
         params['a_port'] = parameters.get('port')
         params['a_dbname'] = parameters.get('dbname')
         params['a_collection'] = parameters.get('collection')
-        params['a_wait_timeout'] = parameters.get('wait_timeout')
+        params['a_waitTimeout'] = parameters.get('waitTimeout')
         params['a_gzip'] = parameters['gzip']
         params['a_path'] = parameters['path']
 
@@ -75,17 +75,17 @@ class Main(object):
             command = 'mongorestore'
 
         if self.config()['a_port'] is None:
-            port = mongodb_port
+            port = mongodbPort
         else:
             port = self.config()['a_port']
 
-        if self.config()['a_wait_timeout'] is not None:
-            if self.config()['a_wait_timeout'] == 0:
+        if self.config()['a_waitTimeout'] is not None:
+            if self.config()['a_waitTimeout'] == 0:
                 timeout = None
             else:
-                timeout = self.config()['a_wait_timeout']
+                timeout = self.config()['a_waitTimeout']
         else:
-            timeout = wait_timeout
+            timeout = waitTimeout
 
         if self.kwargs['action'] == 'create':
             args = "{command} --out {path} --host {host} --port {port}".format(
