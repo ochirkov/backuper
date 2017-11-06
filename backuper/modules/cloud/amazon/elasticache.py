@@ -1,7 +1,7 @@
 from time import sleep
 from backuper.modules.cloud.amazon import get_amazon_client
 from backuper.utils import get_msg
-from backuper.utils.constants import amazon_regions
+from backuper.utils.constants import amazonRegions
 from backuper.utils.validate import ValidateBase
 
 
@@ -11,22 +11,22 @@ class ValidateElasticache(ValidateBase):
 
         if kwargs['action'] == 'create':
             parameters_schema = self.tr.Dict({
-                self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('snapshot_id'): self.tr.String,
-                self.tr.Key('database_id'): self.tr.String
+                self.tr.Key('region'): self.tr.Enum(*amazonRegions),
+                self.tr.Key('snapshotId'): self.tr.String,
+                self.tr.Key('databaseId'): self.tr.String
             })
 
         if kwargs['action'] == 'restore':
             parameters_schema = self.tr.Dict({
-                self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('snapshot_id'): self.tr.String,
-                self.tr.Key('database_id'): self.tr.String
+                self.tr.Key('region'): self.tr.Enum(*amazonRegions),
+                self.tr.Key('snapshotId'): self.tr.String,
+                self.tr.Key('databaseId'): self.tr.String
             })
 
         if kwargs['action'] == 'delete':
             parameters_schema = self.tr.Dict({
-                self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('snapshot_id'): self.tr.String
+                self.tr.Key('region'): self.tr.Enum(*amazonRegions),
+                self.tr.Key('snapshotId'): self.tr.String
             })
         parameters_schema(kwargs['parameters'])
 
@@ -42,33 +42,33 @@ class Main(object):
 
     def create_snapshot(self):
         response = self.client.create_snapshot(
-            SnapshotName=self.parameters['snapshot_id'],
-            CacheClusterId=self.parameters['database_id']
+            SnapshotName=self.parameters['snapshotId'],
+            CacheClusterId=self.parameters['databaseId']
         )
         return response
 
     def restore_from_snapshot(self):
         response = self.client.create_cache_cluster(
-            SnapshotName=self.parameters['snapshot_id'],
-            CacheClusterId=self.parameters['database_id']
+            SnapshotName=self.parameters['snapshotId'],
+            CacheClusterId=self.parameters['databaseId']
         )
         return response
 
     def delete_snapshot(self):
         response = self.client.delete_snapshot(
-            SnapshotName=self.parameters['snapshot_id']
+            SnapshotName=self.parameters['snapshotId']
         )
         return response
 
     def snapshot_is_available(self):
         response = self.client.describe_snapshots(
-            SnapshotName=self.parameters['snapshot_id'])
+            SnapshotName=self.parameters['snapshotId'])
         response_status = response['Snapshots'][0]['SnapshotStatus']
         return response_status
 
     def cache_cluster_is_available(self):
         response = self.client.describe_cache_clusters(
-            CacheClusterId=self.parameters['database_id'])
+            CacheClusterId=self.parameters['databaseId'])
         response_status = response['CacheClusters'][0]['CacheClusterStatus']
         return response_status
 

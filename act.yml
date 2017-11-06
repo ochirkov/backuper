@@ -1,8 +1,10 @@
 ---
 
-type: elasticache
-action: restore
+type: rds
+engine: postgres
+action: create
 parameters:
-  snapshot_id: ""
-  database_id: ""
-  region: ""
+  region: "eu-west-2"
+  snapshotId: "rds-api-auth-blue-04-11"
+  databaseId: "rds-api-auth-blue"
+
