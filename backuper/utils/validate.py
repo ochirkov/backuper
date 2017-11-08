@@ -14,8 +14,7 @@ class ValidateBase(object):
         action_schema = self.tr.Dict({
             self.tr.Key('type'): t.String,
             self.tr.Key('action'): t.Enum(*choices),
-            self.tr.Key('description', optional=True): t.String(
-                max_length=200),
+            self.tr.Key('description', optional=True): t.String(max_length=200),
             self.tr.Key('parameters'): t.Dict().allow_extra("*"),
             self.tr.Key('filters', optional=True): t.List(
                 t.Dict().allow_extra("*"))
@@ -49,7 +48,8 @@ class ValidateBase(object):
             checks[filter['type']](filter)
 
 
-def validate_empty_snapshots(snapshots, msg):
+def validate_empty_snapshots(snapshots):
 
     if not snapshots:
-        raise BackuperNoSnapshotMatchError(msg)
+        # raise BackuperNoSnapshotMatchError(msg)
+        print("No snapshots were found.")

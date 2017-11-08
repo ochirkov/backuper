@@ -27,7 +27,7 @@ elif os.environ.get('AWS_SECRET_KEY'):
 
 def get_amazon_client(service, region):
 
-    s = boto3.session.Session(region_name=region)
+    s = boto3.session.Session(region_name=region, aws_access_key_id=access_key, aws_secret_access_key=secret_key)
     client = s.client(service)
 
     return client

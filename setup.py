@@ -1,6 +1,7 @@
 from setuptools import setup
 from backuper import __version__
 
+
 setup(name='backuper',
       version=__version__,
       description='Command line utility for services backup',

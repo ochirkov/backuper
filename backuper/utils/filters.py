@@ -2,7 +2,7 @@ import re
 import pytz
 from datetime import datetime
 from backuper.utils.validate import validate_empty_snapshots
-from backuper.utils.constants import time_mapper
+from backuper.utils.constants import timeMapper
 
 
 class BackuperFilter(object):
@@ -12,7 +12,7 @@ class BackuperFilter(object):
         filtered = []
 
         for i in snapshots:
-            m = re.match(filter['pattern'], i['snapshot_name'])
+            m = re.match(filter['pattern'], i['snapshotName'])
             if m:
                 filtered.append(i)
 
@@ -24,14 +24,14 @@ class BackuperFilter(object):
 
         def check_age(s_date, unit, count):
 
-            seconds = time_mapper[unit] * count
+            seconds = timeMapper[unit] * count
             today = datetime.utcnow().replace(tzinfo=pytz.utc)
             delta = today - s_date
             delta_time = delta.total_seconds()
 
             return delta_time > seconds
 
-        filtered = [i for i in snapshots if check_age(i['creation_time'],
+        filtered = [i for i in snapshots if check_age(i['creationTime'],
                                                       filter['unit'],
                                                       filter['count'])]
 
@@ -51,8 +51,9 @@ def main(filters, snapshots):
 
     snapshots = snapshots
 
-    for i in filters:
-        f = getattr(BackuperFilter(), 'filter_matcher')(i['type'])
-        snapshots = f(i, snapshots)
+    if filters is not None:
+        for i in filters:
+            f = getattr(BackuperFilter(), 'filter_matcher')(i['type'])
+            snapshots = f(i, snapshots)
 
     return snapshots
