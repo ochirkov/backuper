@@ -39,7 +39,8 @@ class ValidateRDS(ValidateBase):
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('engine'): self.tr.Enum(*engines['rds']),
                 self.tr.Key('snapshot_type'): self.tr.Enum(*snapshot_types),
-                self.tr.Key('snapshot_id'): self.tr.String
+                self.tr.Key('snapshot_id'): self.tr.String,
+                self.tr.Key('fail_on_error', optional=True): self.tr.Bool
             })
 
         parameters_schema(kwargs['parameters'])
