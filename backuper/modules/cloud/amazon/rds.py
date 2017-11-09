@@ -37,7 +37,6 @@ class ValidateRDS(ValidateBase):
         if kwargs['action'] == 'delete':
             parameters_schema = self.tr.Dict({
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-                self.tr.Key('engine'): self.tr.Enum(*engines['rds']),
                 self.tr.Key('snapshot_type'): self.tr.Enum(*snapshot_types),
                 self.tr.Key('snapshot_id'): self.tr.String,
                 self.tr.Key('fail_on_error', optional=True): self.tr.Bool
@@ -57,8 +56,7 @@ class Main(object):
 
     def get_snapshots(self):
 
-        response = self.client.describe_db_snapshots(
-            Engine=self.parameters['engine'])
+        response = self.client.describe_db_snapshots()
 
         return response
 
@@ -95,7 +93,6 @@ class Main(object):
         r = []
         for snapshot in snapshots:
             response = self.client.delete_db_snapshot(
-                Engine=self.parameters['engine'],
                 DBSnapshotIdentifier=snapshot['DBSnapshotIdentifier']
             )
             print(get_msg(self.kwargs['type']) +
