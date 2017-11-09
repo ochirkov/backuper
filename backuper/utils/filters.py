@@ -2,7 +2,7 @@ import re
 import pytz
 from datetime import datetime
 from backuper.utils.validate import validate_empty_snapshots
-from backuper.utils.constants import timeMapper
+from backuper.utils.constants import time_mapper
 
 
 class BackuperFilter(object):
@@ -24,7 +24,7 @@ class BackuperFilter(object):
 
         def check_age(s_date, unit, count):
 
-            seconds = timeMapper[unit] * count
+            seconds = time_mapper[unit] * count
             today = datetime.utcnow().replace(tzinfo=pytz.utc)
             delta = today - s_date
             delta_time = delta.total_seconds()
