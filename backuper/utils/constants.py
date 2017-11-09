@@ -20,8 +20,11 @@ time_mapper = {'hours': 3600,
               'weeks': 604800,
               'months': 2592000}
 
-engine = {'rds': ['postgres', 'mysql', 'mariadb', 'oracle-ee', 'oracle-se', 'oracle-se1',
-                 'oracle-se2', 'sqlserver-ex', 'sqlserver-web', 'sqlserver-se', 'sqlserver-ee']}
+engines = {'rds': ['postgres', 'mysql', 'mariadb', 'oracle-ee', 'oracle-se',
+                   'oracle-se1', 'oracle-se2', 'sqlserver-ex', 'sqlserver-web',
+                   'sqlserver-se', 'sqlserver-ee']}
 
+snapshot_types = ['all', 'standard', 'manual']
+fail_on_error = True
 wait_timeout = 4800
 mongodb_port = 27017
