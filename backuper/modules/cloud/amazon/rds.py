@@ -17,8 +17,10 @@ class ValidateRDS(ValidateBase):
                 self.tr.Key('region'): self.tr.Enum(*amazon_regions),
                 self.tr.Key('snapshot_type'): self.tr.Enum(*snapshot_types),
                 self.tr.Key('engine'): self.tr.Enum(*engines['rds']),
-                self.tr.Key('snapshot_id'): self.tr.String,
-                self.tr.Key('database_id'): self.tr.String,
+                self.tr.Key('DBSnapshotIdentifier'): self.tr.String,
+                self.tr.Key('DBInstanceIdentifier'): self.tr.String,
+                self.tr.Key('Tags', optional=True): self.tr.List(
+                    self.tr.Dict().allow_extra("*")),
                 self.tr.Key('copy_to_region', optional=True): self.tr.Enum(
                     *amazon_regions),
                 self.tr.Key('wait_timeout', optional=True): self.tr.Int
@@ -63,18 +65,17 @@ class Main(object):
     def create_snapshot(self):
 
         response = self.client.create_db_snapshot(
-            Engine=self.parameters['engine'],
-            DBSnapshotIdentifier=self.parameters['snapshot_id'],
-            DBInstanceIdentifier=self.parameters['database_id']
+            DBSnapshotIdentifier=self.parameters['DBSnapshotIdentifier'],
+            DBInstanceIdentifier=self.parameters['DBInstanceIdentifier'],
+            Tags=self.parameters.get('Tags')
         )
         return response
 
     def restore_from_snapshot(self):
 
         response = self.client.restore_db_instance_from_db_snapshot(
-            Engine=self.parameters['engine'],
-            DBSnapshotIdentifier=self.parameters['snapshot_id'],
-            DBInstanceIdentifier=self.parameters['database_id']
+            DBSnapshotIdentifier=self.parameters['DBSnapshotIdentifier'],
+            DBInstanceIdentifier=self.parameters['DBInstanceIdentifier']
         )
 
         return response
@@ -82,8 +83,7 @@ class Main(object):
     def instance_is_available(self):
 
         instance = self.client.describe_db_instances(
-            Engine=self.parameters['engine'],
-            DBInstanceIdentifier=self.parameters['database_id'])
+            DBInstanceIdentifier=self.parameters['DBInstanceIdentifier'])
         status = instance['DBInstances'][0]['DBInstanceStatus']
 
         return status
@@ -106,9 +106,8 @@ class Main(object):
         source_db_snapshot_identifier = resource['DBSnapshot']['DBSnapshotArn']
         self.client = get_amazon_client(self.kwargs['type'], region)
         response = self.client.copy_db_snapshot(
-            Engine=self.parameters['engine'],
             SourceDBSnapshotIdentifier=source_db_snapshot_identifier,
-            TargetDBSnapshotIdentifier=self.parameters['snapshot_id'],
+            TargetDBSnapshotIdentifier=self.parameters['DBSnapshotIdentifier'],
             CopyTags=True,
             SourceRegion=self.parameters['region']
         )
@@ -169,13 +168,15 @@ class Main(object):
         if self.kwargs['action'] == 'create':
             resource = self.create_snapshot()
             self.wait_snapshot(
-                self.parameters['snapshot_id'], self.parameters['region'])
+                self.parameters['DBSnapshotIdentifier'],
+                self.parameters['region'])
             if self.parameters.get('copy_to_region') is not None:
                 jobs = []
                 for region in self.parameters.get('copy_to_region'):
                     self.copy_snapshot(resource, region)
                     p = Process(target=self.wait_snapshot,
-                                args=(self.parameters['snapshot_id'], region))
+                                args=(self.parameters['DBSnapshotIdentifier'],
+                                      region))
                     jobs.append(p)
                     p.start()
 
