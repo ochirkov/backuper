@@ -7,7 +7,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(
 modules = {
     'rds': 'backuper.modules.cloud.amazon.rds',
     'mongodb': 'backuper.modules.mongodb.mongodb',
-    'digital_ocean': 'backuper.modules.cloud.digital_ocean.digital_ocean'
+    'digital_ocean': 'backuper.modules.cloud.digital_ocean.digital_ocean',
+    'tar': 'backuper.modules.tar',
 }
 
 amazon_regions = ['us-east-2', 'us-east-1', 'us-west-1', 'us-west-2',
