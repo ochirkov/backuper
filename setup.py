@@ -16,7 +16,7 @@ setup(name='backuper',
         'bumpversion==0.5.3',
         'jinja2==2.9.6',
         'boto3==1.4.7',
-        'pymongo==3.5.1',
+        'Fabric3==1.13.1.post1',
         'pytz==2017.2'
       ],
       package_dir={'backuper': 'backuper'},

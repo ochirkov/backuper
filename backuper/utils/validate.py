@@ -1,6 +1,7 @@
 import abc
 import trafaret as t
 from .exceptions import BackuperNoSnapshotMatchError
+import sys
 
 
 class ValidateBase(object):
@@ -49,7 +50,11 @@ class ValidateBase(object):
             checks[filter['type']](filter)
 
 
-def validate_empty_snapshots(snapshots, msg):
+def validate_empty_snapshots(snapshots, msg, fail):
 
     if not snapshots:
-        raise BackuperNoSnapshotMatchError(msg)
+        if fail:
+            raise BackuperNoSnapshotMatchError(msg)
+        else:
+            print(msg)
+            sys.exit(0)
