@@ -45,12 +45,12 @@ def merge_vars():
     return _vars
 
 
-def parse_action():
+def parse_actions():
 
     _vars = merge_vars()
-    action = load_yaml(get_jinja_template(args.action_file.read(), _vars))
+    actions = load_yaml(get_jinja_template(args.action_file.read(), _vars))
 
-    return action
+    return actions
 
 
-action = parse_action()
+actions = parse_actions()
