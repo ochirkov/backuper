@@ -1,6 +1,7 @@
 import yaml
 import jinja2
 import re
+from .validate import BaseValidator
 
 
 class Config:
@@ -27,7 +28,12 @@ class Config:
     def _merge_vars(self):
         return {**self._parse_vars(), **self._parse_extra_vars()}
 
-    def parse_action(self):
-        return self._load_yaml(
+    def _validate(self, actions_dict):
+        BaseValidator().actions_validate(**actions_dict)
+
+    def parse_actions(self):
+        actions = self._load_yaml(
             self._get_jinja_template(self.args.action_file.read(), self._merge_vars()),
         )
+        self._validate(actions)
+        return actions

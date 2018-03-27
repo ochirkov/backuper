@@ -1,5 +1,5 @@
 from backuper.modules.cloud.amazon import get_amazon_client
-from backuper.utils.validate import ValidateBase, validate_empty_snapshots
+from backuper.utils.validate import BaseValidator, validate_empty_snapshots
 from backuper.utils import get_msg
 from backuper.utils.constants import amazon_regions, wait_timeout, engines, \
                                      snapshot_types, fail_on_error as f_on_e
@@ -8,7 +8,7 @@ from time import sleep
 from multiprocessing import Process
 
 
-class ValidateRDS(ValidateBase):
+class RDSValidator(BaseValidator):
 
     def params_validate(self, **kwargs):
 
@@ -52,7 +52,7 @@ class Main(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.parameters = self.kwargs['parameters']
-        self.validate = ValidateRDS()
+        self.validate = RDSValidator()
         self.client = get_amazon_client(
             self.kwargs['type'], self.parameters['region'])
 
