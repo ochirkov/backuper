@@ -1,56 +1,39 @@
 import yaml
-from .params import args
 import jinja2
 import re
+from .validate import BaseValidator
 
 
-def load_yaml(f):
+class Config:
 
-    return yaml.load(f)
+    _extra_vars_pattern = re.compile(r'(\S+)=(".*?"|\S+)')
 
+    def __init__(self, args):
+        self.args = args
 
-def parse_vars():
+    def _load_yaml(self, f):
+        return yaml.load(f)
 
-    if args.vars_file is not None:
-        _vars = load_yaml(args.vars_file)
-    else:
-        _vars = {}
+    def _parse_vars(self):
+        return self._load_yaml(self.args.vars_file) if self.args.vars_file else {}
 
-    return _vars
+    def _parse_extra_vars(self):
+        matches = self._extra_vars_pattern.findall(self.args.extra_vars)
+        return {name: value for name, value in matches}
 
+    def _get_jinja_template(self, r_template, args):
+        t = jinja2.Template(r_template, undefined=jinja2.StrictUndefined)
+        return t.render(args)
 
-def parse_extra_vars():
+    def _merge_vars(self):
+        return {**self._parse_vars(), **self._parse_extra_vars()}
 
-    if args.extra_vars is not None:
-        extra_vars = dict(re.findall(r'(\S+)=(".*?"|\S+)', args.extra_vars))
-    else:
-        extra_vars = {}
+    def _validate(self, actions_dict):
+        BaseValidator().actions_validate(**actions_dict)
 
-    return extra_vars
-
-
-def get_jinja_template(r_template, args):
-
-    t = jinja2.Template(r_template, undefined=jinja2.StrictUndefined)
-
-    return t.render(args)
-
-
-def merge_vars():
-
-    _vars = parse_vars()
-    extra_vars = parse_extra_vars()
-    _vars.update(extra_vars)
-
-    return _vars
-
-
-def parse_action():
-
-    _vars = merge_vars()
-    action = load_yaml(get_jinja_template(args.action_file.read(), _vars))
-
-    return action
-
-
-action = parse_action()
+    def parse_actions(self):
+        actions = self._load_yaml(
+            self._get_jinja_template(self.args.action_file.read(), self._merge_vars()),
+        )
+        self._validate(actions)
+        return actions
