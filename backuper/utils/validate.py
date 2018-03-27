@@ -2,6 +2,7 @@ import abc
 import trafaret as t
 from .exceptions import BackuperNoSnapshotMatchError
 import sys
+from .constants import choices, types
 
 
 class ValidateBase(object):
@@ -10,10 +11,19 @@ class ValidateBase(object):
     def __init__(self):
         self.tr = t
 
-    def action_validate(self, choices, **kwargs):
+    def actions_validate(self, **kwargs):
+
+        actions_schema = self.tr.Dict({
+            self.tr.Key('actions'): t.List(
+                t.Dict().allow_extra("*"), min_length=1)
+        })
+
+        actions_schema(kwargs)
+
+    def action_validate(self, **kwargs):
 
         action_schema = self.tr.Dict({
-            self.tr.Key('type'): t.String,
+            self.tr.Key('type'): t.Enum(*types),
             self.tr.Key('action'): t.Enum(*choices),
             self.tr.Key('description', optional=True): t.String(
                 max_length=200),

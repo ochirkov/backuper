@@ -2,6 +2,7 @@ import yaml
 from .params import args
 import jinja2
 import re
+from . import validate
 
 
 def load_yaml(f):
@@ -54,3 +55,4 @@ def parse_actions():
 
 
 actions = parse_actions()
+validate.actions_validate(**actions)

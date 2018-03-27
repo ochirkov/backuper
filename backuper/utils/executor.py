@@ -1,11 +1,16 @@
 from .constants import modules
 from .config import actions
 import importlib
+from . import validate
 
 
-for action in actions.keys():
+for action in actions['actions']:
 
-    exec_module = importlib.import_module(modules[actions[action]['type']])
+    # Validate action
+    #
+    validate.action_validate(**action)
+
+    exec_module = importlib.import_module(modules[action['type']])
     #TODO: validate type from action
 
     exec_client = exec_module.Main(**action)

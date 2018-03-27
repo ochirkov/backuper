@@ -26,5 +26,9 @@ time_mapper = {'hours': 3600,
                'weeks': 604800,
                'months': 2592000}
 
+choices = ['create', 'delete', 'restore']
+types = ['elasticache', 'rds', 'mongodb']
+
+
 wait_timeout = 4800
 mongodb_port = 27017
