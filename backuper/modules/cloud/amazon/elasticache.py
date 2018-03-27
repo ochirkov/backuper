@@ -2,10 +2,10 @@ from time import sleep
 from backuper.modules.cloud.amazon import get_amazon_client
 from backuper.utils import get_msg
 from backuper.utils.constants import amazon_regions
-from backuper.utils.validate import ValidateBase
+from backuper.utils.validate import BaseValidator
 
 
-class ValidateElasticache(ValidateBase):
+class ElasticacheValidator(BaseValidator):
 
     def params_validate(self, **kwargs):
 
@@ -36,7 +36,7 @@ class Main(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.parameters = self.kwargs['parameters']
-        self.validate = ValidateElasticache()
+        self.validate = ElasticacheValidator()
         self.client = get_amazon_client(
             self.kwargs['type'], self.parameters['region'])
 

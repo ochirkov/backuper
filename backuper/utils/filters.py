@@ -12,7 +12,7 @@ class BackuperFilter(object):
         filtered = []
 
         for i in snapshots:
-            m = re.match(filter['pattern'], i['snapshot_name'])
+            m = re.match(filter['pattern'], i['snapshotName'])
             if m:
                 filtered.append(i)
 
@@ -31,7 +31,7 @@ class BackuperFilter(object):
 
             return delta_time > seconds
 
-        filtered = [i for i in snapshots if check_age(i['creation_time'],
+        filtered = [i for i in snapshots if check_age(i['creationTime'],
                                                       filter['unit'],
                                                       filter['count'])]
 
@@ -51,8 +51,9 @@ def main(filters, snapshots):
 
     snapshots = snapshots
 
-    for i in filters:
-        f = getattr(BackuperFilter(), 'filter_matcher')(i['type'])
-        snapshots = f(i, snapshots)
+    if filters is not None:
+        for i in filters:
+            f = getattr(BackuperFilter(), 'filter_matcher')(i['type'])
+            snapshots = f(i, snapshots)
 
     return snapshots

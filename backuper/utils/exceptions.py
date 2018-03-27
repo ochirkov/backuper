@@ -10,5 +10,6 @@ class BackuperError(Exception):
 class BackuperConfigError(BackuperError):
     pass
 
+
 class BackuperNoSnapshotMatchError(BackuperError):
     pass
