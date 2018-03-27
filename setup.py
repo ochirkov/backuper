@@ -1,29 +1,31 @@
-from setuptools import setup
-from backuper import __version__
+from pathlib import Path
 
+from setuptools import find_packages, setup
+from backuper import __author__, __version__
 
-setup(name='backuper',
-      version=__version__,
-      description='Command line utility for services backup',
-      url='https://github.com/ochirkov/backuper.git',
-      author='Chirkov Oleksandr',
-      author_email='ironloriin20@gmail.com',
-      license='Apache-2.0',
-      scripts=['bin/backuper'],
-      install_requires=[
-        'trafaret==0.12.0',
-        'pyyaml==3.12',
-        'pylint==1.7.1',
-        'bumpversion==0.5.3',
-        'jinja2==2.9.6',
-        'boto3==1.4.7',
-        'pymongo==3.5.1',
-        'pytz==2017.2'
-      ],
-      package_dir={'backuper': 'backuper'},
-      packages=['backuper.modules.cloud.digital_ocean',
-                'backuper.modules.cloud.amazon',
-                'backuper.modules.mongodb',
-                'backuper.utils'],
-      include_package_data=True,
-      zip_safe=False)
+project_root = Path(__file__).parent
+
+requirements = project_root / 'requirements.txt'
+with requirements.open(mode='rt', encoding='utf-8') as fp:
+    install_requires = [l.strip() for l in fp]
+
+package_name = 'backuper'
+
+setup(
+    name=package_name,
+    version=__version__,
+    description='Command line utility for services backup',
+    url='https://github.com/ochirkov/backuper.git',
+    author=__author__,
+    author_email='ironloriin20@gmail.com',
+    license='Apache-2.0',
+    install_requires=install_requires,
+    packages=find_packages(include=package_name + '.*'),
+    include_package_data=True,
+    zip_safe=False,
+    entry_points={
+            'console_scripts': [
+                '{} = {}.executor:entrypoint'.format(*[package_name]*2),
+            ],
+        },
+)
