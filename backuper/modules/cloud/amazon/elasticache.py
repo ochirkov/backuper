@@ -12,7 +12,15 @@ class ElasticacheValidator(BaseValidator):
                 tr.Key('region'): tr.Enum(*amazon_regions),
                 tr.Key('snapshot_name'): tr.String,
             })
-    _schema_db = _schema + tr.Dict({tr.Key('database_id'): tr.String})
+
+    replication_group_id = tr.Dict({tr.Key(
+        'replication_group_id', optional=True): tr.String})
+    cache_cluster_id = tr.Dict({tr.Key(
+        'cache_cluster_id', optional=True): tr.String})
+
+    _schema_db = _schema + replication_group_id + cache_cluster_id
+
+    #TODO: create one req param from two optional
 
     def create_validate(self, params):
         self._schema_db(params)
@@ -35,11 +43,22 @@ class Main(AbstractRunner):
             self.type, self.params['region']
         )
 
-    def _create_snapshot(self, snapshot_name, database_id):
-        response = self.client.create_snapshot(
-            SnapshotName=snapshot_name,
-            CacheClusterId=database_id
-        )
+    def _create_snapshot(
+            self,
+            snapshot_name,
+            cache_cluster_id=None,
+            replication_group_id=None
+    ):
+        if cache_cluster_id:
+            response = self.client.create_snapshot(
+                SnapshotName=snapshot_name,
+                CacheClusterId=cache_cluster_id
+            )
+        elif replication_group_id:
+            response = self.client.create_snapshot(
+                SnapshotName=snapshot_name,
+                ReplicationGroupId=replication_group_id
+            )
         return response
 
     def _restore_from_snapshot(self, snapshot_name, database_id):
@@ -55,10 +74,9 @@ class Main(AbstractRunner):
         )
         return response
 
-    def _snapshot_is_available(self, snapshot_name):
+    def _describe_snapshots(self, snapshot_name):
         response = self.client.describe_snapshots(SnapshotName=snapshot_name)
-        response_status = response['Snapshots'][0]['SnapshotStatus']
-        return response_status
+        return response
 
     def _cache_cluster_is_available(self, database_id):
         response = self.client.describe_cache_clusters(
@@ -69,16 +87,22 @@ class Main(AbstractRunner):
 
 
     def create(self, params):
+
+        cache_cluster_id = params.get('cache_cluster_id')
+        replication_group_id = params.get('replication_group_id')
+
         self._create_snapshot(
             params['snapshot_name'],
-            params['database_id']
+            cache_cluster_id=cache_cluster_id,
+            replication_group_id=replication_group_id
         )
 
-        i = None
-        while i != 'available':
+        snapshot_meta = self._describe_snapshots(params['snapshot_name'])
+        status = snapshot_meta['Snapshots'][0]['SnapshotStatus']
+
+        while status != 'available':
             self.logger.info(
                 get_msg(self.type, self.action + ' is in progress...\n'))
-            i = self._snapshot_is_available(params['snapshot_name'])
             sleep(60)
 
 
