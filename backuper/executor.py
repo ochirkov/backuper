@@ -52,6 +52,14 @@ class AbstractRunner(ABC):
                     '"{}" implementation should accept only one parameter,'
                     ' "{}" received'.format(choice, params_count))
 
+            choice_validator = getattr(self.validator, '{}_validate'.format(choice))
+            if not choice_validator:
+                raise NotImplementedError(
+                    '"{}_validator" is not implemented'.format(choice))
+
+            if not isinstance(choice_validator, Callable):
+                raise TypeError('"{}_validator" is not a callable object'.format(choice))
+
         if not isinstance(self.validator, BaseValidator):
             raise TypeError(
                 '"validator" has unsupported type "{}"'.format(
@@ -59,9 +67,10 @@ class AbstractRunner(ABC):
 
         self.action = kwargs['action']
 
-        self.validator.params_validate(kwargs['parameters'])
         self.params = kwargs['parameters']
         self.type = kwargs['type']
+
+        getattr(self.validator, '{}_validate'.format(self.action))(self.params)
         self.logger = kwargs['logger']
 
     def run(self):

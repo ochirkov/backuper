@@ -36,12 +36,10 @@ class Main(AbstractRunner):
 
         if proc.returncode == 0:
             self.logger.info(
-                get_msg(type +
-                        ' Snapshot created successfully ...'))
+                get_msg(type, ' Snapshot created successfully ...'))
         else:
             self.logger.error(
-                get_msg(type +
-                        ' {} ...'.format(err.decode("utf-8").rstrip())))
+                get_msg(type, ' {} ...'.format(err.decode("utf-8").rstrip())))
 
     def restore(self, params):
         command = "{command} --host {host} --port {port} {path}".format(
