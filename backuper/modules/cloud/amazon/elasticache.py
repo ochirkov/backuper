@@ -10,7 +10,7 @@ from backuper.utils.validate import BaseValidator
 class ElasticacheValidator(BaseValidator):
     _schema = tr.Dict({
                 tr.Key('region'): tr.Enum(*amazon_regions),
-                tr.Key('snapshot_id'): tr.String,
+                tr.Key('snapshot_name'): tr.String,
             })
     _schema_db = _schema + tr.Dict({tr.Key('database_id'): tr.String})
 
@@ -35,28 +35,28 @@ class Main(AbstractRunner):
             self.type, self.params['region']
         )
 
-    def _create_snapshot(self, snapshot_id, database_id):
+    def _create_snapshot(self, snapshot_name, database_id):
         response = self.client.create_snapshot(
-            SnapshotName=snapshot_id,
+            SnapshotName=snapshot_name,
             CacheClusterId=database_id
         )
         return response
 
-    def _restore_from_snapshot(self, snapshot_id, database_id):
+    def _restore_from_snapshot(self, snapshot_name, database_id):
         response = self.client.create_cache_cluster(
-            SnapshotName=snapshot_id,
+            SnapshotName=snapshot_name,
             CacheClusterId=database_id
         )
         return response
 
-    def _delete_snapshot(self, snapshot_id):
+    def _delete_snapshot(self, snapshot_name):
         response = self.client.delete_snapshot(
-            SnapshotName=snapshot_id,
+            SnapshotName=snapshot_name,
         )
         return response
 
-    def _snapshot_is_available(self, snapshot_id):
-        response = self.client.describe_snapshots(SnapshotName=snapshot_id)
+    def _snapshot_is_available(self, snapshot_name):
+        response = self.client.describe_snapshots(SnapshotName=snapshot_name)
         response_status = response['Snapshots'][0]['SnapshotStatus']
         return response_status
 
@@ -69,15 +69,16 @@ class Main(AbstractRunner):
 
 
     def create(self, params):
-        self._create_snapshot(params['snapshot_id'],
-                              params['database_id']
+        self._create_snapshot(
+            params['snapshot_name'],
+            params['database_id']
         )
 
         i = None
         while i != 'available':
             self.logger.info(
                 get_msg(self.type, self.action + ' is in progress...\n'))
-            i = self._snapshot_is_available(params['snapshot_id'])
+            i = self._snapshot_is_available(params['snapshot_name'])
             sleep(60)
 
 
