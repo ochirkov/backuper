@@ -22,7 +22,7 @@ class BaseValidator:
 
         actions_schema(kwargs)
 
-    def params_validate(self, parameters):
+    def params_validate(self, action, parameters):
         """Your params validation implementation."""
         pass
 

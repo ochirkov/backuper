@@ -1,11 +1,5 @@
-from .validate import ValidateBase
+def get_msg(service, message):
 
-
-def get_msg(service):
-
-    msg = '[ BACKUPER {} ]  |  '.format(service.upper())
+    msg = '[ BACKUPER {} ]  |  {}'.format(service.upper(), message)
 
     return msg
-
-
-validate = ValidateBase()
