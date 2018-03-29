@@ -61,11 +61,22 @@ class Main(AbstractRunner):
             )
         return response
 
-    def _restore_from_snapshot(self, snapshot_name, database_id):
-        response = self.client.create_cache_cluster(
-            SnapshotName=snapshot_name,
-            CacheClusterId=database_id
-        )
+    def _restore_from_snapshot(
+            self,
+            snapshot_name,
+            cache_cluster_id=None,
+            replication_group_id=None
+    ):
+        if cache_cluster_id:
+            response = self.client.create_cache_cluster(
+                SnapshotName=snapshot_name,
+                CacheClusterId=cache_cluster_id
+            )
+        elif replication_group_id:
+            response = self.client.create_cache_cluster(
+                SnapshotName=snapshot_name,
+                ReplicationGroupId=replication_group_id
+            )
         return response
 
     def _delete_snapshot(self, snapshot_name):
@@ -75,15 +86,17 @@ class Main(AbstractRunner):
         return response
 
     def _describe_snapshots(self, snapshot_name):
-        response = self.client.describe_snapshots(SnapshotName=snapshot_name)
+        response = self.client.describe_snapshots(
+            SnapshotName=snapshot_name
+        )
         return response
 
-    def _cache_cluster_is_available(self, database_id):
-        response = self.client.describe_cache_clusters(
-            CacheClusterId=database_id
-        )
-        response_status = response['CacheClusters'][0]['CacheClusterStatus']
-        return response_status
+    # def _cache_cluster_is_available(self, database_id):
+    #     response = self.client.describe_cache_clusters(
+    #         CacheClusterId=database_id
+    #     )
+    #     response_status = response['CacheClusters'][0]['CacheClusterStatus']
+    #     return response_status
 
     def _copy_snapshot(
             self,
@@ -98,7 +111,7 @@ class Main(AbstractRunner):
         )
         return response
 
-    def _wait_available(self, snapshot_name):
+    def _wait_snapshot_available(self, snapshot_name):
 
         status = None
 
@@ -116,7 +129,7 @@ class Main(AbstractRunner):
             cache_cluster_id=params.get('cache_cluster_id'),
             replication_group_id=params.get('replication_group_id')
         )
-        self._wait_available(params['snapshot_name'])
+        self._wait_snapshot_available(params['snapshot_name'])
 
 
     def copy_to_s3(self, params):
@@ -125,30 +138,19 @@ class Main(AbstractRunner):
             params['snapshot_name'],
             params['s3_bucket_name']
         )
-        self._wait_available(params['snapshot_name'])
+        self._wait_snapshot_available(params['snapshot_name'])
 
+
+    def restore(self, params):
+        self._restore_from_snapshot(
+            params['snapshot_name'],
+            cache_cluster_id=params.get('cache_cluster_id'),
+            replication_group_id=params.get('replication_group_id')
+        )
+        self._wait_snapshot_available(params['snapshot_name'])
 
 
     def delete(self, params):
         pass
-
-    def restore(self, params):
-        pass
-
-
-        # if self.kwargs['action'] == 'restore':
-        #     self.restore_from_snapshot()
-        #     print(get_msg(self.kwargs['type']) +
-        #           self.kwargs['action'] + ' is in progress...\n')
-        #     i = 0
-        #     while i != 'available':
-        #         i = self.cache_cluster_is_available()
-        #         sleep(60)
-        #
-        # if self.kwargs['action'] == 'delete':
-        #     self.delete_snapshot()
-
-
-
         # print(get_msg(self.kwargs['type']) + self.kwargs['action'] +
         #       ' completed in {} region...\n'.format(self.parameters['region']))
