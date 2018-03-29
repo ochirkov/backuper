@@ -4,7 +4,7 @@ from backuper.executor import AbstractRunner
 from backuper.modules.cloud.amazon import get_amazon_client
 from backuper.utils import get_msg
 from backuper.utils.constants import amazon_regions
-from backuper.utils.validate import BaseValidator
+from backuper.utils.validate import BaseValidator, OneOptKey
 
 
 class ElasticacheValidator(BaseValidator):
@@ -12,18 +12,18 @@ class ElasticacheValidator(BaseValidator):
                 tr.Key('region'): tr.Enum(*amazon_regions),
                 tr.Key('snapshot_name'): tr.String,
             })
+    _cluster_id = tr.Dict({OneOptKey(
+        'replication_group_id', 'cache_cluster_id'): tr.String})
+    _s3_bucket_name = tr.Dict({tr.Key('s3_bucket_name'): tr.String})
 
-    replication_group_id = tr.Dict({tr.Key(
-        'replication_group_id', optional=True): tr.String})
-    cache_cluster_id = tr.Dict({tr.Key(
-        'cache_cluster_id', optional=True): tr.String})
-
-    _schema_db = _schema + replication_group_id + cache_cluster_id
-
-    #TODO: create one req param from two optional
+    _schema_db = _schema + _cluster_id
+    _schema_s3 = _schema + _s3_bucket_name
 
     def create_validate(self, params):
         self._schema_db(params)
+
+    def copy_to_s3_validate(self, params):
+        self._schema_s3(params)
 
     def restore_validate(self, params):
         self._schema_db(params)
@@ -34,7 +34,7 @@ class ElasticacheValidator(BaseValidator):
 
 class Main(AbstractRunner):
 
-    choices = ['create', 'delete', 'restore']
+    choices = ['create', 'delete', 'restore', 'copy_to_s3']
     validator = ElasticacheValidator()
 
     def __init__(self, **kwargs):
@@ -85,25 +85,48 @@ class Main(AbstractRunner):
         response_status = response['CacheClusters'][0]['CacheClusterStatus']
         return response_status
 
-
-    def create(self, params):
-
-        cache_cluster_id = params.get('cache_cluster_id')
-        replication_group_id = params.get('replication_group_id')
-
-        self._create_snapshot(
-            params['snapshot_name'],
-            cache_cluster_id=cache_cluster_id,
-            replication_group_id=replication_group_id
+    def _copy_snapshot(
+            self,
+            source_snapshot_name,
+            target_snapshot_name,
+            target_bucket
+    ):
+        response = self.client.copy_snapshot(
+            SourceSnapshotName=source_snapshot_name,
+            TargetSnapshotName=target_snapshot_name,
+            TargetBucket=target_bucket
         )
+        return response
 
-        snapshot_meta = self._describe_snapshots(params['snapshot_name'])
-        status = snapshot_meta['Snapshots'][0]['SnapshotStatus']
+    def _wait_available(self, snapshot_name):
+
+        status = None
 
         while status != 'available':
+            snapshot_meta = self._describe_snapshots(snapshot_name)
+            status = snapshot_meta['Snapshots'][0]['SnapshotStatus']
             self.logger.info(
                 get_msg(self.type, self.action + ' is in progress...\n'))
             sleep(60)
+
+
+    def create(self, params):
+        self._create_snapshot(
+            params['snapshot_name'],
+            cache_cluster_id=params.get('cache_cluster_id'),
+            replication_group_id=params.get('replication_group_id')
+        )
+        self._wait_available(params['snapshot_name'])
+
+
+    def copy_to_s3(self, params):
+        self._copy_snapshot(
+            params['snapshot_name'],
+            params['snapshot_name'],
+            params['s3_bucket_name']
+        )
+        self._wait_available(params['snapshot_name'])
+
 
 
     def delete(self, params):
