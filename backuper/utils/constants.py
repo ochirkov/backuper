@@ -27,4 +27,3 @@ engines = {'rds': ['postgres', 'mysql', 'mariadb', 'oracle-ee', 'oracle-se',
 snapshot_types = ['all', 'standard', 'manual']
 fail_on_error = True
 wait_timeout = 4800
-mongodb_port = 27017

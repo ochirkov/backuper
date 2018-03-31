@@ -19,13 +19,14 @@ setup(
     author=__author__,
     author_email='ironloriin20@gmail.com',
     license='Apache-2.0',
+    python_requires='>=3.5.0',
     install_requires=install_requires,
     packages=find_packages(include=package_name + '.*'),
     include_package_data=True,
     zip_safe=False,
     entry_points={
             'console_scripts': [
-                '{} = {}.executor:entrypoint'.format(*[package_name]*2),
+                '{} = {}.main:entrypoint'.format(*[package_name]*2),
             ],
         },
 )
