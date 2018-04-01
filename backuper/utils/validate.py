@@ -22,10 +22,6 @@ class BaseValidator:
 
         actions_schema(kwargs)
 
-    def params_validate(self, action, parameters):
-        """Your params validation implementation."""
-        pass
-
     def filters_validate(self, **kwargs):
 
         regex_filter_schema = t.Dict({

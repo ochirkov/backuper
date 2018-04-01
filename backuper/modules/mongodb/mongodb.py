@@ -1,76 +1,108 @@
 import trafaret as tr
-from backuper.executor import AbstractRunner
+from functools import partial
+from backuper.main import AbstractRunner
 from backuper.utils.validate import BaseValidator
-from backuper.utils import get_msg
-from backuper.utils.constants import wait_timeout, mongodb_port
 from subprocess import Popen, PIPE
+
+HOST = '127.0.0.1'
+PORT = '27017'
+
+OptKey = partial(tr.Key, optional=True)
 
 
 class MongoValidator(BaseValidator):
+    _schema = tr.Dict({
+        OptKey('host'): tr.String,
+        OptKey('port'): tr.String,
+        OptKey('dbname'): tr.String,
+        OptKey('collection'): tr.String,
+        OptKey('gzip'): tr.Bool,
+    })
 
-    def params_validate(self, parameters):
-
-        parameters_schema = tr.Dict({
-            tr.Key('host'): tr.String,
-            tr.Key('port', optional=True): tr.String,
-            tr.Key('dbname', optional=True): tr.String,
-            tr.Key('collection', optional=True): tr.String,
-            tr.Key('gzip', optional=True): tr.Bool,
-            tr.Key('path'): tr.String,
-            tr.Key('wait_timeout', optional=True): tr.Int
+    def create_validate(self, parameters):
+        create_schema = self._schema + tr.Dict({
+            OptKey('path'): tr.String,
         })
 
-        parameters_schema(parameters)
+        create_schema(parameters)
+
+    def restore_validate(self, parameters):
+        restore_schema = self._schema + tr.Dict({
+            tr.Key('path'): tr.String,
+        })
+
+        restore_schema(parameters)
+
+    def delete_validate(self, parameters):
+        raise NotImplementedError()
 
 
 class Main(AbstractRunner):
     choices = ['create', 'delete', 'restore']
     validator = MongoValidator()
 
+    _cmd = '{bin} --host {host} --port {port}'
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _processing(self, command, timeout, type):
-        proc = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
-        out, err = proc.communicate(timeout=timeout)
+    def create(self, params):
+        cmd = self._cmd.format(
+            bin='mongodump',
+            host=params.get('host') or HOST,
+            port=params.get('port') or PORT,
+        )
 
-        if proc.returncode == 0:
-            self.logger.info(
-                get_msg(type, ' Snapshot created successfully ...'))
+        cmd = self._update_cmd(cmd, params)
+        cmd += ' --out {}'.format(params['path'])
+
+        ret = self._processing(cmd)
+
+        if ret == 0:
+            self.logger.info('Snapshot created successfully')
         else:
-            self.logger.error(
-                get_msg(type, ' {} ...'.format(err.decode("utf-8").rstrip())))
+            self.logger.error('Failed to create snapshot')
 
     def restore(self, params):
-        command = "{command} --host {host} --port {port} {path}".format(
-            path=params['path'],
-            host=params['host'],
-            port=params.get('port') or mongodb_port,
-            command='mongorestore'
+        cmd = self._cmd.format(
+            bin='mongorestore',
+            host=params.get('host') or HOST,
+            port=params.get('port') or PORT,
         )
 
-    def create(self, params):
-        timeout = params['wait_timeout'] or wait_timeout
+        cmd = self._update_cmd(cmd, params)
+        cmd += ' ' + params['path']
 
-        command = "{command} --out {path} --host {host} --port {port}".format(
-            path=params['path'],
-            host=params['host'],
-            port=params.get('port') or mongodb_port,
-            command='mongodump',
-        )
+        ret = self._processing(cmd)
 
-        if params.get('gzip'):
-            command += ' --gzip'
-
-        coll = params.get('collection')
-        if coll:
-            command += ' --collection {}'.format(coll)
-
-        db = params.get('dbname')
-        if db:
-            command += ' --db {}'.format(db)
-
-        self._processing(command, timeout, self.type)
+        if ret == 0:
+            self.logger.info('Snapshot restored successfully')
+        else:
+            self.logger.error('Failed to restore snapshot')
 
     def delete(self, params):
-        pass
+        raise NotImplementedError()
+
+    def _update_cmd(self, cmd, params):
+        db = params.get('dbname')
+        if db:
+            cmd += ' --db {}'.format(db)
+
+            coll = params.get('collection')
+            if coll:
+                cmd += ' --collection {}'.format(coll)
+
+        if params.get('gzip'):
+            cmd += ' --gzip'
+
+        return cmd
+
+    def _processing(self, cmd):
+        self.logger.debug('Processing cmd "{}"'.format(cmd))
+
+        with Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE) as proc:
+            for pipe in (proc.stdout, proc.stderr):
+                for line in pipe:
+                    self.logger.debug(line.decode().rstrip('\n'))
+
+        return proc.returncode
