@@ -1,8 +1,7 @@
 from time import sleep
 import trafaret as tr
-from backuper.executor import AbstractRunner
+from backuper.main import AbstractRunner
 from backuper.modules.cloud.amazon import get_amazon_client
-from backuper.utils import get_msg
 from backuper.utils.constants import amazon_regions
 from backuper.utils.validate import BaseValidator, OneOptKey
 
@@ -91,13 +90,6 @@ class Main(AbstractRunner):
         )
         return response
 
-    # def _cache_cluster_is_available(self, database_id):
-    #     response = self.client.describe_cache_clusters(
-    #         CacheClusterId=database_id
-    #     )
-    #     response_status = response['CacheClusters'][0]['CacheClusterStatus']
-    #     return response_status
-
     def _copy_snapshot(
             self,
             source_snapshot_name,
@@ -118,8 +110,7 @@ class Main(AbstractRunner):
         while status != 'available':
             snapshot_meta = self._describe_snapshots(snapshot_name)
             status = snapshot_meta['Snapshots'][0]['SnapshotStatus']
-            self.logger.info(
-                get_msg(self.type, self.action + ' is in progress...\n'))
+            self.logger.info('is in progress...\n')
             sleep(60)
 
 
@@ -152,5 +143,3 @@ class Main(AbstractRunner):
 
     def delete(self, params):
         pass
-        # print(get_msg(self.kwargs['type']) + self.kwargs['action'] +
-        #       ' completed in {} region...\n'.format(self.parameters['region']))

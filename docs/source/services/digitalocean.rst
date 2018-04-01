@@ -1,0 +1,4 @@
+.. _digitalocean:
+
+DIGITAL OCEAN
+=============
