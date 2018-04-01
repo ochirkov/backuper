@@ -1,21 +1,28 @@
 from time import sleep
 import trafaret as tr
-from backuper.executor import AbstractRunner
+from backuper.main import AbstractRunner
 from backuper.modules.cloud.amazon import get_amazon_client
-from backuper.utils import get_msg
 from backuper.utils.constants import amazon_regions
-from backuper.utils.validate import BaseValidator
+from backuper.utils.validate import BaseValidator, OneOptKey
 
 
 class ElasticacheValidator(BaseValidator):
     _schema = tr.Dict({
                 tr.Key('region'): tr.Enum(*amazon_regions),
-                tr.Key('snapshot_id'): tr.String,
+                tr.Key('snapshot_name'): tr.String,
             })
-    _schema_db = _schema + tr.Dict({tr.Key('database_id'): tr.String})
+    _cluster_id = tr.Dict({OneOptKey(
+        'replication_group_id', 'cache_cluster_id'): tr.String})
+    _s3_bucket_name = tr.Dict({tr.Key('s3_bucket_name'): tr.String})
+
+    _schema_db = _schema + _cluster_id
+    _schema_s3 = _schema + _s3_bucket_name
 
     def create_validate(self, params):
         self._schema_db(params)
+
+    def copy_to_s3_validate(self, params):
+        self._schema_s3(params)
 
     def restore_validate(self, params):
         self._schema_db(params)
@@ -26,7 +33,7 @@ class ElasticacheValidator(BaseValidator):
 
 class Main(AbstractRunner):
 
-    choices = ['create', 'delete', 'restore']
+    choices = ['create', 'delete', 'restore', 'copy_to_s3']
     validator = ElasticacheValidator()
 
     def __init__(self, **kwargs):
@@ -35,72 +42,104 @@ class Main(AbstractRunner):
             self.type, self.params['region']
         )
 
-    def _create_snapshot(self, snapshot_id, database_id):
-        response = self.client.create_snapshot(
-            SnapshotName=snapshot_id,
-            CacheClusterId=database_id
-        )
+    def _create_snapshot(
+            self,
+            snapshot_name,
+            cache_cluster_id=None,
+            replication_group_id=None
+    ):
+        if cache_cluster_id:
+            response = self.client.create_snapshot(
+                SnapshotName=snapshot_name,
+                CacheClusterId=cache_cluster_id
+            )
+        elif replication_group_id:
+            response = self.client.create_snapshot(
+                SnapshotName=snapshot_name,
+                ReplicationGroupId=replication_group_id
+            )
         return response
 
-    def _restore_from_snapshot(self, snapshot_id, database_id):
-        response = self.client.create_cache_cluster(
-            SnapshotName=snapshot_id,
-            CacheClusterId=database_id
-        )
+    def _restore_from_snapshot(
+            self,
+            snapshot_name,
+            cache_cluster_id=None,
+            replication_group_id=None
+    ):
+        if cache_cluster_id:
+            response = self.client.create_cache_cluster(
+                SnapshotName=snapshot_name,
+                CacheClusterId=cache_cluster_id
+            )
+        elif replication_group_id:
+            response = self.client.create_cache_cluster(
+                SnapshotName=snapshot_name,
+                ReplicationGroupId=replication_group_id
+            )
         return response
 
-    def _delete_snapshot(self, snapshot_id):
+    def _delete_snapshot(self, snapshot_name):
         response = self.client.delete_snapshot(
-            SnapshotName=snapshot_id,
+            SnapshotName=snapshot_name,
         )
         return response
 
-    def _snapshot_is_available(self, snapshot_id):
-        response = self.client.describe_snapshots(SnapshotName=snapshot_id)
-        response_status = response['Snapshots'][0]['SnapshotStatus']
-        return response_status
-
-    def _cache_cluster_is_available(self, database_id):
-        response = self.client.describe_cache_clusters(
-            CacheClusterId=database_id
+    def _describe_snapshots(self, snapshot_name):
+        response = self.client.describe_snapshots(
+            SnapshotName=snapshot_name
         )
-        response_status = response['CacheClusters'][0]['CacheClusterStatus']
-        return response_status
+        return response
+
+    def _copy_snapshot(
+            self,
+            source_snapshot_name,
+            target_snapshot_name,
+            target_bucket
+    ):
+        response = self.client.copy_snapshot(
+            SourceSnapshotName=source_snapshot_name,
+            TargetSnapshotName=target_snapshot_name,
+            TargetBucket=target_bucket
+        )
+        return response
+
+    def _wait_snapshot_available(self, snapshot_name):
+
+        status = None
+
+        while status != 'available':
+            snapshot_meta = self._describe_snapshots(snapshot_name)
+            status = snapshot_meta['Snapshots'][0]['SnapshotStatus']
+            self.logger.info('is in progress...\n')
+            sleep(60)
 
 
     def create(self, params):
-        self._create_snapshot(params['snapshot_id'],
-                              params['database_id']
+        self._create_snapshot(
+            params['snapshot_name'],
+            cache_cluster_id=params.get('cache_cluster_id'),
+            replication_group_id=params.get('replication_group_id')
         )
+        self._wait_snapshot_available(params['snapshot_name'])
 
-        i = None
-        while i != 'available':
-            self.logger.info(
-                get_msg(self.type, self.action + ' is in progress...\n'))
-            i = self._snapshot_is_available(params['snapshot_id'])
-            sleep(60)
+
+    def copy_to_s3(self, params):
+        self._copy_snapshot(
+            params['snapshot_name'],
+            params['snapshot_name'],
+            params['s3_bucket_name']
+        )
+        self._wait_snapshot_available(params['snapshot_name'])
+
+
+    def restore(self, params):
+        self._restore_from_snapshot(
+            params['snapshot_name'],
+            cache_cluster_id=params.get('cache_cluster_id'),
+            replication_group_id=params.get('replication_group_id')
+        )
+        self._wait_snapshot_available(params['snapshot_name'])
 
 
     def delete(self, params):
         pass
-
-    def restore(self, params):
-        pass
-
-
-        # if self.kwargs['action'] == 'restore':
-        #     self.restore_from_snapshot()
-        #     print(get_msg(self.kwargs['type']) +
-        #           self.kwargs['action'] + ' is in progress...\n')
-        #     i = 0
-        #     while i != 'available':
-        #         i = self.cache_cluster_is_available()
-        #         sleep(60)
-        #
-        # if self.kwargs['action'] == 'delete':
-        #     self.delete_snapshot()
-
-
-
-        # print(get_msg(self.kwargs['type']) + self.kwargs['action'] +
-        #       ' completed in {} region...\n'.format(self.parameters['region']))

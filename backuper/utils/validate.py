@@ -3,6 +3,35 @@ from .exceptions import BackuperNoSnapshotMatchError
 import sys
 
 
+class OneOptKey(t.Key):
+
+    def __init__(self, *args, **kwargs):
+        kwargs['optional'] = True
+        name = '[%s]' % ', '.join(args)
+
+        super().__init__(name, **kwargs)
+        self.keys = args
+
+    def __call__(self, data):
+        subdict = {k: data[k] for k in self.keys if k in data}
+        if not subdict:
+            for key in self.keys:
+                yield (
+                    key,
+                    t.DataError(f'one of keys {self.name} is required'),
+                    (key,),
+                )
+
+        for key, value in subdict.items():
+            try:
+                result = self.trafaret(value)
+            except t.DataError as de:
+                error = de
+                yield key, error, (key,)
+            else:
+                yield key, result, (key,)
+
+
 class BaseValidator:
 
     def actions_validate(self, **kwargs):
