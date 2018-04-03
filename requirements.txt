@@ -8,3 +8,4 @@ boto3==1.4.7
 pytz==2017.2
 sphinx==1.7.2
 sphinx-autobuild==0.7.1
+sphinx_rtd_theme==0.2.4

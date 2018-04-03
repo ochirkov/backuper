@@ -1,4 +1,0 @@
-.. _running:
-
-Running Backuper
-================
