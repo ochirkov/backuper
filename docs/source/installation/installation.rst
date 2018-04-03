@@ -1,28 +1,15 @@
 .. _installation:
 
-Installation
-============
+Installing Backuper
+===================
 
 
-**What Will Be Installed**
-
-Backuper is command line tool which helps manage backups for services you need.
-With Backuper minimal learning required. Action files use an easy and descriptive language based on YAML
-and Jinja templates. In fact, it is needed specify service which should be backuped/rotated/restored
-and provide a few parameters for him.
-
-
-**Installing backuper Via Pip:**
-
-
-.. code-block:: shell
+**Installing backuper Via Pip:**::
 
    $ sudo pip install backuper
 
 
-**It could be installed directly from source:**
-
-.. code-block:: shell
+**It could be installed directly from source:**::
 
    $ git clone https://github.com/ochirkov/backuper.git
    $ cd backuper

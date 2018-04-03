@@ -18,7 +18,7 @@ def setup_logger(options, config):
     stream_handler = logging.StreamHandler()
 
     fmt = logging.Formatter(
-        '%(asctime)s %(levelname)-5.5s [BACKUPER] [%(type)s] '
+        '%(asctime)s %(levelname)-5.5s [BACKUPER] [%(service)s] '
         '[%(filename)s:%(lineno)d] [%(funcName)s] %(message)s')
 
     stream_handler.setLevel(log_level)
@@ -56,7 +56,7 @@ def setup_parser():
 class AbstractRunner(ABC):
     choices = None
     validator = None
-    type = None
+    service = None
 
     def __init__(self, **kwargs):
         for attr in ('choices', 'validator'):
@@ -104,13 +104,13 @@ class AbstractRunner(ABC):
         self.action = kwargs['action']
 
         self.params = kwargs['parameters']
-        self.type = kwargs['type']
+        self.service = kwargs['service']
 
         getattr(self.validator, '{}_validate'.format(self.action))(self.params)
 
         self.logger = logging.LoggerAdapter(
             kwargs['logger'],
-            {'type': self.type.upper()},
+            {'service': self.type.upper()},
         )
 
     def run(self):
@@ -128,7 +128,9 @@ def entrypoint():
 
     for action_dict in actions['actions']:
         try:
-            exec_module = importlib.import_module(modules[action_dict['type']])
+            exec_module = importlib.import_module(
+                modules[action_dict['service']]
+            )
         except (TypeError, ModuleNotFoundError, ValueError) as err:
             # TODO more detailed exceptions handling
             raise err

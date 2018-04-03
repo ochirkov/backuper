@@ -1,3 +1,6 @@
+Services Index
+==============
+
 .. toctree::
    :maxdepth: 2
 
