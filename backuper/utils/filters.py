@@ -1,59 +1,61 @@
 import re
-import pytz
+from abc import ABC, abstractmethod
 from datetime import datetime
-from backuper.utils.validate import validate_empty_snapshots
-from backuper.utils.constants import time_mapper
+from typing import List
 
 
-class BackuperFilter(object):
+from backuper.utils.helpers import SnapshotInfo
 
-    def regex_filter(self, filter, snapshots):
 
+class AbstractFilter(ABC):
+
+    def __init__(self, meta):
+        self.meta = meta
+
+    def __call__(self, snapshots: List[SnapshotInfo]):
+        return self.filter(snapshots)
+
+    @abstractmethod
+    def filter(self, snapshots: List[SnapshotInfo]) -> List[SnapshotInfo]:
+        pass
+
+
+class AgeFilter(AbstractFilter):
+
+    def filter(self, snapshots: List[SnapshotInfo]):
+        raise NotImplementedError()
+
+
+class RegexFilter(AbstractFilter):
+
+    def filter(self, snapshots: List[SnapshotInfo]):
+        pattern = re.compile(self.meta['pattern'])
         filtered = []
 
-        for i in snapshots:
-            m = re.match(filter['pattern'], i['snapshotName'])
-            if m:
-                filtered.append(i)
-
-        validate_empty_snapshots(filtered, 'Any matches by regex filter...')
+        for snapshot in snapshots:
+            if pattern.match(snapshot.name):
+                filtered.append(snapshot)
 
         return filtered
 
-    def age_filter(self, filter, snapshots):
 
-        def check_age(s_date, unit, count):
+class PeriodFilter(AbstractFilter):
 
-            seconds = time_mapper[unit] * count
-            today = datetime.utcnow().replace(tzinfo=pytz.utc)
-            delta = today - s_date
-            delta_time = delta.total_seconds()
+    def filter(self, snapshots: List[SnapshotInfo]):
+        raise NotImplementedError()
 
-            return delta_time > seconds
 
-        filtered = [i for i in snapshots if check_age(i['creationTime'],
-                                                      filter['unit'],
-                                                      filter['count'])]
+class FilterMixin:
 
-        validate_empty_snapshots(filtered, 'Any matches by age filter...')
+    @staticmethod
+    def filter(
+            filters: List[AbstractFilter],
+            snapshots: List[SnapshotInfo],
+    ) -> List[SnapshotInfo]:
+
+        filtered = snapshots.copy()
+
+        for f in filters:
+            filtered = f(filtered)
 
         return filtered
-
-    def filter_matcher(self, type):
-
-        types = {'regex': self.regex_filter,
-                 'age': self.age_filter}
-
-        return types[type]
-
-
-def main(filters, snapshots):
-
-    snapshots = snapshots
-
-    if filters is not None:
-        for i in filters:
-            f = getattr(BackuperFilter(), 'filter_matcher')(i['type'])
-            snapshots = f(i, snapshots)
-
-    return snapshots

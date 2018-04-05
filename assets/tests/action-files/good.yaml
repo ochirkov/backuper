@@ -1,0 +1,21 @@
+---
+
+actions:
+
+  - service: mongodb
+    action: create
+    description: "Dump MongoDB Collection"
+    parameters:
+      dbname: "users"
+      host: "127.0.0.1"
+      gzip: True
+      path: "/tmp/mongo-backups-dir"
+
+  - service: elasticache
+    action: delete
+    description: "Rotating elasticache"
+    parameters:
+      region: "eu-west-2"
+    filters:
+      - type: regex
+        pattern: '[a-zA-Z]+'

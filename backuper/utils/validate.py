@@ -39,7 +39,7 @@ class BaseValidator:
         actions_schema = t.Dict({
             t.Key('actions'): t.List(
                 t.Dict({
-                    t.Key('type'): t.String,
+                    t.Key('service'): t.String,
                     t.Key('action'): t.String,
                     t.Key('description', optional=True): t.String(
                         max_length=200),

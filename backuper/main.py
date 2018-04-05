@@ -1,13 +1,11 @@
 import argparse
 import importlib
 import logging
-from abc import ABC
+import abc
 from collections import Iterable, Callable
 from inspect import signature
-
 from .utils.config import Config
 from .utils.constants import modules
-from .utils.validate import BaseValidator
 
 
 def setup_logger(options, config):
@@ -53,7 +51,7 @@ def setup_parser():
     return parser
 
 
-class AbstractRunner(ABC):
+class AbstractRunner(abc.ABC):
     choices = None
     validator = None
     service = None
@@ -96,22 +94,31 @@ class AbstractRunner(ABC):
             if not isinstance(choice_validator, Callable):
                 raise TypeError('"{}_validator" is not a callable object'.format(choice))
 
-        if not isinstance(self.validator, BaseValidator):
-            raise TypeError(
-                '"validator" has unsupported type "{}"'.format(
-                    type(self.validator)))
+        self.service = kwargs['service']
+        self.logger = logging.LoggerAdapter(
+            kwargs['logger'],
+            {'service': self.service.upper()},
+        )
 
         self.action = kwargs['action']
-
         self.params = kwargs['parameters']
-        self.service = kwargs['service']
 
         getattr(self.validator, '{}_validate'.format(self.action))(self.params)
 
-        self.logger = logging.LoggerAdapter(
-            kwargs['logger'],
-            {'service': self.type.upper()},
-        )
+        self.filters = []
+        filters_module = importlib.import_module('backuper.utils.filters')
+        if not filters_module:
+            raise NotImplementedError('module with filters wasn\'t found')
+
+        for filter_dict in kwargs.get('filters', []):
+            filter_cls_name = '{}Filter'.format(filter_dict['type'].capitalize())
+            filter_cls = getattr(filters_module, filter_cls_name, None)
+            if not filter_cls:
+                self.logger.warning(
+                    'Filter class "{}" wasn\'t found'.format(filter_cls_name))
+                continue
+
+            self.filters.append(filter_cls(filter_dict))
 
     def run(self):
         getattr(self, self.action)(self.params)
@@ -129,7 +136,7 @@ def entrypoint():
     for action_dict in actions['actions']:
         try:
             exec_module = importlib.import_module(
-                modules[action_dict['service']]
+                modules[action_dict['service']],
             )
         except (TypeError, ModuleNotFoundError, ValueError) as err:
             # TODO more detailed exceptions handling
