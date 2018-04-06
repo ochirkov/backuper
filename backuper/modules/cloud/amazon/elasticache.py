@@ -3,10 +3,10 @@ import trafaret as tr
 from backuper.main import AbstractRunner
 from backuper.modules.cloud.amazon import get_amazon_client
 from backuper.utils.constants import amazon_regions
-from backuper.utils.validate import BaseValidator, OneOptKey
+from backuper.utils.validate import OneOptKey
 
 
-class ElasticacheValidator(BaseValidator):
+class ElasticacheValidator:
     _schema = tr.Dict({
                 tr.Key('region'): tr.Enum(*amazon_regions),
                 tr.Key('snapshot_name'): tr.String,
