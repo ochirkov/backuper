@@ -5,7 +5,9 @@ from pathlib import Path
 
 from backuper.main import AbstractRunner
 from backuper.utils.filters import FilterMixin
-from backuper.utils.helpers import get_files_from_dir, remove_in_parallel, SnapshotInfo
+from backuper.utils.helpers import (
+    get_files_from_dir, remove_in_parallel, SnapshotInfo,
+)
 from subprocess import Popen, PIPE
 
 HOST = '127.0.0.1'
