@@ -1,48 +1,34 @@
+import trafaret as tr
 from backuper.modules.cloud.digital_ocean import get_digitalocean_client
-from backuper.utils.validate import ValidateBase, validate_empty_snapshots
-from backuper.utils import get_msg
-from backuper.utils.constants import digital_ocean_regions, wait_timeout
-from backuper.utils.filters import main as f_main
-from time import sleep
 from multiprocessing import Process
 
+from ....main import AbstractRunner
 
-class ValidateDO(ValidateBase):
-
-    def params_validate(self, **kwargs):
-
-        if kwargs['action'] == 'create':
-            parameters_schema = self.tr.Dict({
-                self.tr.Key('snapshot_name'): self.tr.String,
-                self.tr.Key('region'): self.tr.Enum(*digital_ocean_regions),
-                self.tr.Key('droplet_name'): self.tr.String,
-                self.tr.Key('copy_to_region', optional=True): self.tr.List(
-                    self.tr.String, min_length=1),
-                self.tr.Key('wait_timeout', optional=True): self.tr.Int
-            })
-        #
-        # if kwargs['action'] == 'restore':
-        #     parameters_schema = self.tr.Dict({
-        #         self.tr.Key('snapshot_identifier'): self.tr.String,
-        #         self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-        #         self.tr.Key('db_identifier'): self.tr.String
-        #     })
-        #
-        # if kwargs['action'] == 'delete':
-        #     parameters_schema = self.tr.Dict({
-        #         self.tr.Key('region'): self.tr.Enum(*amazon_regions),
-        #         self.tr.Key('snapshot_type'): self.tr.Enum(
-        #             *['standard', 'manual', 'all'])
-        #     })
-
-        parameters_schema(kwargs['parameters'])
+REGIONS = []
 
 
-class Main(object):
+class DigitalOceanValidator:
+
+    def create_validate(self, parameters):
+        parameters_schema = tr.Dict({
+            tr.Key('snapshot_name'): tr.String,
+            tr.Key('region'): tr.Enum(*REGIONS),
+            tr.Key('droplet_name'): tr.String,
+            tr.Key('copy_to_region', optional=True): tr.List(
+                tr.String, min_length=1),
+            tr.Key('wait_timeout', optional=True): tr.Int
+        })
+
+        parameters_schema(parameters)
+
+
+class Main(AbstractRunner):
+    choices = ['create', 'delete', 'restore']
+    validator = DigitalOceanValidator()
+
     def __init__(self, **kwargs):
-
+        super().__init__(**kwargs)
         self.kwargs = kwargs
-        self.validate = ValidateDO()
         self.config()
 
     def config(self):
@@ -52,14 +38,9 @@ class Main(object):
                       a_d_name=None,
                       a_wait_timeout=None)
 
-        parameters = self.kwargs['parameters']
+        parameters = self.params
         params['a_region'] = parameters['region']
-        params['a_type'] = self.kwargs['type']
-
-        choices = ['create', 'delete', 'restore']
-
-        self.validate.action_validate(choices, **self.kwargs)
-        self.validate.params_validate(**self.kwargs)
+        params['a_type'] = self.service
 
         if self.kwargs['action'] == 'create':
             params['a_snap_name'] = parameters['snapshot_name']
@@ -100,10 +81,10 @@ class Main(object):
 
     def copy_snapshot(self, resource, region):
 
-        c = get_amazon_client(self.config()['a_type'], region)
+        c = get_amazon_client(self.config()['a_type'], region)  # noqa
 
         response = c.copy_db_snapshot(
-            SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,
+            SourceDBSnapshotIdentifier=SourceDBSnapshotIdentifier,  # noqa
             TargetDBSnapshotIdentifier=self.config()['a_snap_id'],
             CopyTags=True,
             SourceRegion=self.config()['a_region']

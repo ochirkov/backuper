@@ -113,7 +113,6 @@ class Main(AbstractRunner):
             self.logger.info('is in progress...\n')
             sleep(60)
 
-
     def create(self, params):
         self._create_snapshot(
             params['snapshot_name'],
@@ -121,7 +120,6 @@ class Main(AbstractRunner):
             replication_group_id=params.get('replication_group_id')
         )
         self._wait_snapshot_available(params['snapshot_name'])
-
 
     def copy_to_s3(self, params):
         self._copy_snapshot(
@@ -131,7 +129,6 @@ class Main(AbstractRunner):
         )
         self._wait_snapshot_available(params['snapshot_name'])
 
-
     def restore(self, params):
         self._restore_from_snapshot(
             params['snapshot_name'],
@@ -139,7 +136,6 @@ class Main(AbstractRunner):
             replication_group_id=params.get('replication_group_id')
         )
         self._wait_snapshot_available(params['snapshot_name'])
-
 
     def delete(self, params):
         pass

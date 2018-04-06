@@ -1,11 +1,14 @@
 import argparse
 import importlib
 import logging
-import abc
-from collections import Iterable, Callable
+from abc import abstractmethod, ABC
+from collections import Callable
 from inspect import signature
+from typing import List
+
 from .utils.config import Config
 from .utils.constants import modules
+from .utils import filters
 
 
 def setup_logger(options, config):
@@ -16,8 +19,9 @@ def setup_logger(options, config):
     stream_handler = logging.StreamHandler()
 
     fmt = logging.Formatter(
-        '%(asctime)s %(levelname)-5.5s [BACKUPER] [%(service)s] '
-        '[%(filename)s:%(lineno)d] [%(funcName)s] %(message)s')
+        '%(asctime)s %(levelname)-5.5s [BACKUPER] [%(module)s] '
+        '[%(filename)s:%(lineno)d] [%(funcName)s] %(message)s',
+    )
 
     stream_handler.setLevel(log_level)
     stream_handler.setFormatter(fmt)
@@ -51,74 +55,85 @@ def setup_parser():
     return parser
 
 
-class AbstractRunner(abc.ABC):
-    choices = None
-    validator = None
-    service = None
+class AbstractRunner(ABC):
+
+    @property
+    @abstractmethod
+    def choices(self) -> List[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def validator(self):
+        pass
+
+    @property
+    def service(self) -> str:
+        return self._service
+
+    @property
+    def filters(self) -> List[filters.AbstractFilter]:
+        return self._filters
 
     def __init__(self, **kwargs):
-        for attr in ('choices', 'validator'):
-            if not hasattr(self, attr) or not getattr(self, attr, None):
-                raise NotImplementedError(
-                    '"{}" attr must be implemented by subclass'.format(attr))
+        self._service = kwargs['service']
+        self.action = kwargs['action']
+        self.params = kwargs['parameters']
+        self._filters = kwargs.get('filters', [])
 
-        if not isinstance(self.choices, Iterable):
-            raise TypeError(
-                '`choices` attr has unsupported type "{}"'.format(
-                    type(self.choices)))
+        self.logger = kwargs['logger']
 
-        if not all(isinstance(choice, str) for choice in self.choices):
-            raise TypeError(
-                'All elements in `choices` should be `str` instances')
+        self._validate_choices()
+        self._validate_params()
+        self._setup_filters()
 
+    def _validate_choices(self):
         for choice in self.choices:
             choice_attr = getattr(self, choice, None)
             if not choice_attr:
                 raise NotImplementedError(
-                    '"{}" is declared but not implemented'.format(choice))
+                    '"{}" is declared but not implemented'.format(choice),
+                )
 
             if not isinstance(choice_attr, Callable):
-                raise TypeError('"{}" is not a callable object'.format(choice))
+                raise TypeError(
+                    '"{}" is not a callable object'.format(choice),
+                )
 
             params_count = len(signature(choice_attr).parameters)
             if params_count != 1:
                 raise Exception(
                     '"{}" implementation should accept only one parameter,'
-                    ' "{}" received'.format(choice, params_count))
+                    ' "{}" received'.format(choice, params_count),
+                )
 
-            choice_validator = getattr(self.validator, '{}_validate'.format(choice), None)
+            choice_validator = getattr(
+                self.validator,
+                '{}_validate'.format(choice),
+                None,
+            )
             if not choice_validator:
                 raise NotImplementedError(
-                    '"{}_validator" is not implemented'.format(choice))
+                    '"{}_validator" is not implemented'.format(choice),
+                )
 
             if not isinstance(choice_validator, Callable):
-                raise TypeError('"{}_validator" is not a callable object'.format(choice))
+                raise TypeError(
+                    '"{}_validator" is not a callable object'.format(choice),
+                )
 
-        self.service = kwargs['service']
-        self.logger = logging.LoggerAdapter(
-            kwargs['logger'],
-            {'service': self.service.upper()},
-        )
+    def _validate_params(self):
+        validate_callable = '{}_validate'.format(self.action)
+        getattr(self.validator, validate_callable)(self.params)
 
-        self.action = kwargs['action']
-        self.params = kwargs['parameters']
+    def _setup_filters(self):
+        def instant_filter(conf):
+            filter_cls_name = '{}Filter'.format(conf['type'].capitalize())
+            filter_cls = getattr(filters, filter_cls_name, None)
+            return filter_cls(conf) if filter_cls else None
 
-        getattr(self.validator, '{}_validate'.format(self.action))(self.params)
-
-        self.filters = []
-        filters_module = importlib.import_module('backuper.utils.filters')
-        if not filters_module:
-            raise NotImplementedError('module with filters wasn\'t found')
-
-        for filter_dict in kwargs.get('filters', []):
-            filter_cls_name = '{}Filter'.format(filter_dict['type'].capitalize())
-            filter_cls = getattr(filters_module, filter_cls_name, None)
-            if not filter_cls:
-                self.logger.warning(
-                    'Filter class "{}" wasn\'t found'.format(filter_cls_name))
-                continue
-
-            self.filters.append(filter_cls(filter_dict))
+        self._filters = [instant_filter(f_conf) for f_conf in self._filters]
+        self._filters = [f for f in self._filters if f]
 
     def run(self):
         getattr(self, self.action)(self.params)
