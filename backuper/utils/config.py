@@ -15,7 +15,9 @@ class Config:
         return yaml.load(f)
 
     def _parse_vars(self):
-        return self._load_yaml(self.args.vars_file) if self.args.vars_file else {}
+        if self.args.vars_file:
+            return self._load_yaml(self.args.vars_file)
+        return {}
 
     def _parse_extra_vars(self):
         if self.args.extra_vars:
@@ -36,7 +38,10 @@ class Config:
 
     def parse_actions(self):
         actions = self._load_yaml(
-            self._get_jinja_template(self.args.action_file.read(), self._merge_vars()),
+            self._get_jinja_template(
+                self.args.action_file.read(),
+                self._merge_vars(),
+            ),
         )
         self._validate(actions)
         return actions

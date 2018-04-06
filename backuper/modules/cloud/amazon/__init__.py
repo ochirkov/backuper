@@ -1,5 +1,5 @@
 import boto3
-import os
+# import os
 # import os.path
 # import configparser
 #

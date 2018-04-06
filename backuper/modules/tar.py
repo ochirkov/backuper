@@ -1,23 +1,25 @@
+import trafaret as tr
 from datetime import datetime
-from pathlib import PurePath  # FIXME: Py3 only
+from pathlib import PurePath
 
 from fabric.api import run, settings
 from fabric.network import disconnect_all, join_host_strings
 
-from backuper.utils.validate import ValidateBase
+from ..utils.validate import BaseValidator
+from ..main import AbstractRunner
 
 
-class TarValidator(ValidateBase):
+class TarValidator(BaseValidator):
 
     defaults = {
         'port': 22,
     }
 
     def parse_and_validate(self, options):
-        tr = self.tr
+
         schema = tr.Dict({
             tr.Key('host'): tr.String,
-            self.tr.Key('port', optional=True): self.tr.Int,
+            tr.Key('port', optional=True): tr.Int,
             tr.Key('username'): tr.String,
             tr.Key('password', optional=True): tr.String,
             tr.Key('key', optional=True): tr.String,
@@ -35,10 +37,10 @@ class TarValidator(ValidateBase):
         return opts
 
 
-
-class Main(object):
+class Main(AbstractRunner):
 
     def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.config = self.configure(kwargs)
 
     def configure(self, opts):
