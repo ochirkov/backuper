@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List
 
 
-from backuper.utils.helpers import SnapshotInfo
+from ..utils.helpers import SnapshotInfo
 
 
 class AbstractFilter(ABC):

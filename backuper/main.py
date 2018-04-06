@@ -19,8 +19,9 @@ def setup_logger(options, config):
     stream_handler = logging.StreamHandler()
 
     fmt = logging.Formatter(
-        '%(asctime)s %(levelname)-5.5s [BACKUPER] [%(service)s] '
-        '[%(filename)s:%(lineno)d] [%(funcName)s] %(message)s')
+        '%(asctime)s %(levelname)-5.5s [BACKUPER] [%(module)s] '
+        '[%(filename)s:%(lineno)d] [%(funcName)s] %(message)s',
+    )
 
     stream_handler.setLevel(log_level)
     stream_handler.setFormatter(fmt)
@@ -80,10 +81,7 @@ class AbstractRunner(ABC):
         self.params = kwargs['parameters']
         self._filters = kwargs.get('filters', [])
 
-        self.logger = logging.LoggerAdapter(
-            kwargs['logger'],
-            {'service': self.service.upper()},
-        )
+        self.logger = kwargs['logger']
 
         self._validate_choices()
         self._validate_params()

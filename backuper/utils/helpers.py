@@ -1,9 +1,12 @@
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from os import remove as os_remove
 from pathlib import Path
 from typing import List
 from concurrent.futures import ProcessPoolExecutor
+
+logger = logging.getLogger('backuper.main')
 
 
 def get_files_from_dir(p: Path):
@@ -38,7 +41,16 @@ class SnapshotInfo(ABC):
 
 
 def remove(path: Path):
-    os_remove(path.absolute())
+    abs_path = path.absolute()
+    try:
+        os_remove(abs_path)
+    except OSError as err:
+        logger.error(
+            'Unable to remove the file "{}"'.format(abs_path),
+            exc_info=err,
+        )
+    finally:
+        logger.debug('File "{}" was successfully removed'.format(abs_path))
 
 
 def fn_in_parallel(fn, it):
