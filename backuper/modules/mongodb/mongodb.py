@@ -44,7 +44,7 @@ class MongoValidator:
 
 
 class Main(AbstractRunner, FilterMixin):
-    choices = ['create', 'delete', 'restore']
+    choices = ['create', 'delete', 'restore', 'copy_to_region']
     validator = MongoValidator()
 
     _cmd = '{bin} --host {host} --port {port}'
