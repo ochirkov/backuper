@@ -1,13 +1,24 @@
 import logging
 
-from backuper.adapters import BackupInfo, Action
-from backuper.params import Int, List
+from backuper.adapters import Action
+from backuper.backup import Backup
+from backuper.params import Int, Param, List
 
 
 logger = logging.getLogger(__name__)
 
 
-class SleepingAdapter(Action):
+class BackupInfo(Param):
+    """A helper that creates a Backup instance from a dict of backup params."""
+
+    @classmethod
+    def cast(cls, value):
+        if isinstance(value, Backup):
+            return value
+        return Backup(**value)
+
+
+class SleepingAdapter:
 
     sleep: Int = 3
 
@@ -18,7 +29,7 @@ class SleepingAdapter(Action):
         logger.info('finished %s after sleeping %d seconds', action, sec)
 
 
-class Create(SleepingAdapter):
+class Create(SleepingAdapter, Action):
 
     result_backup: BackupInfo
 
@@ -27,7 +38,7 @@ class Create(SleepingAdapter):
         return self.result_backup
 
 
-class Retrieve(SleepingAdapter):
+class Retrieve(SleepingAdapter, Action):
 
     result_backups: List
 
@@ -36,7 +47,7 @@ class Retrieve(SleepingAdapter):
         return [BackupInfo.cast(item) for item in self.result_backups]
 
 
-class Delete(SleepingAdapter):
+class Delete(SleepingAdapter, Action):
 
     backup: BackupInfo
 

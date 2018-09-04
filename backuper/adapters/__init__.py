@@ -1,15 +1,9 @@
-from backuper.backup import Backup
-from backuper.params import Param, ParamsBase
+from backuper.params import ParamSchemaBase
 
 
-class BackupInfo(Param):
+class Action(ParamSchemaBase):
 
-    @classmethod
-    def cast(cls, value):
-        if isinstance(value, Backup):
-            return value
-        return Backup(**value)
-
-
-class Action(ParamsBase):
-    pass
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        if not hasattr(cls, 'run'):
+            raise RuntimeError('Adapter action must define run(self) method')

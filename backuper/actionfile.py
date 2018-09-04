@@ -7,7 +7,13 @@ from backuper.executor import (
     build_executor_registry,
     GroupExecutor,
 )
-from backuper.params import AdapterParam, get_combined_schema, ParamError
+from backuper.params import (
+    AdapterParam,
+    get_combined_schema,
+    ParamError,
+    ParamsBase,
+    ParamSetterBase,
+)
 
 from .meta import ActionFileMeta
 
@@ -96,11 +102,16 @@ def build_executor(params):
     if 'action' in params:
         adapter_desc = AdapterParam.cast(params['action'])
         adapter_cls = adapter_desc.cls
+
         schema = get_combined_schema(AdapterExecutor, adapter_cls)
         params = schema.apply_to(params)
         exec_params = AdapterExecutor.param_schema.select_from(params)
         exec_params['action'] = adapter_desc
         adapter_params = adapter_cls.param_schema.select_from(params)
+
+        adapter_bases = (ParamSetterBase, adapter_cls)
+        adapter_cls = type(adapter_cls.__name__, adapter_bases, {})
+
         executor = AdapterExecutor(**exec_params)
         executor.adapter = adapter_cls(**adapter_params)
         return executor

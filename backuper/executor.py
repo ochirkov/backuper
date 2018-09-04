@@ -157,14 +157,19 @@ class AdapterExecutorBase(Executor):
     def _run(self):
         try:
             return self.adapter.run()
+        except Exception as exc:
+            logger.exception('Exception in adapter')
         finally:
             self._done.set()
 
     def _join(self):
         self._get_runner()
         super()._join()
-        if self._result.ready():
-            self._result = self._result.get()
+        try:
+            self._result = self._result.get(5)
+        except multiprocessing.TimeourError:
+            logger.warning('Result not ready')
+            pass
 
     def _terminate(self):
         if not self._terminating:

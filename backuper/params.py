@@ -1,3 +1,5 @@
+import re
+
 from collections import namedtuple
 from datetime import datetime
 from importlib import import_module
@@ -99,11 +101,6 @@ class AdapterParam(Str):
         value = super().cast(value)
         action_info = value.splitlines()[0].strip()
         action_type, adapter_type, *_ = action_info.split()
-
-        # TESTING ############
-        adapter_type = 'sleep'
-        ######################
-
         module = 'backuper.adapters.{0}'.format(adapter_type)
         try:
             module = import_module(module)
@@ -111,6 +108,51 @@ class AdapterParam(Str):
         except (ImportError, AttributeError) as err:
             raise ParamError('Invalid adapter spec: {0}'.format(err))
         return AdapterDescriptor(adapter_cls, action_info)
+
+
+class HostNameOrIP(Str):
+
+    host_re = re.compile(r'^[a-zA-Z0-9-]{1,63}(?:\.[a-zA-Z0-9-]{1,63})*\.?$')
+    ip_re = re.compile(r'\d{1,3}(?:\.\d{1,3})')
+
+    @classmethod
+    def is_host(cls, value):
+        return bool(cls.host_re.match(value)) and len(value) <= 253
+
+    @classmethod
+    def is_ip(cls, value):
+        if cls.ip_re.match(value):
+            oct, *octs = [int(oct) for oct in value.split('.')]
+            return 0 < oct <= 255 and all(0 <= oct <= 255 for oct in octs)
+        return False
+
+    @classmethod
+    def cast(cls, value):
+        value = super().cast(value)
+        if cls.is_host(value) or cls.is_ip(value):
+            return value
+        raise ParamError('Not a valid host name or IP address')
+
+
+class Port(Int):
+
+    @classmethod
+    def cast(cls, value):
+        value = super().cast(value)
+        if not 0 < value <= 65535:
+            raise ParamError('Not a valid port')
+        return value
+
+
+# TODO: implement a proper generic one-of param
+def one_of(name, param_type, *choices):
+    def cast(self, value):
+        value = super(type(self), self).cast(value)
+        if value not in choices:
+            choices = [str(choice) for choice in choices]
+            raise ParamError('Must be one of ' + ', '.join(choices))
+        return value
+    return type(name, (param_type,), {'cast': cast})
 
 
 class ParamSpec:
@@ -152,6 +194,10 @@ class ParamSchema:
             if name in defaults:
                 spec['default'] = defaults[name]
             specs[name] = ParamSpec(**spec)
+
+        print(cls, specs)
+        print()
+
         return specs
 
     def select_from(self, params):
@@ -186,8 +232,9 @@ class ParamSchema:
                 try:
                     selected[name] = spec.type.cast(raw)
                 except Exception as err:  # TODO: ParamError
-                    errors.append(ParamError(f'{name}: {err}',
-                                             param=name, ctx=param_ctx[1]))
+                    errors.append(ParamError(
+                        f'{name}: {err}', param=name, ctx=param_ctx[1]
+                    ))
 
         if errors:
             raise ParamError.from_errors(errors)
@@ -214,7 +261,14 @@ def get_combined_schema(clsa, clsb, *clss):
     return schema
 
 
-class ParamsBase:
+class ParamSchemaBase:
+
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        cls.param_schema = ParamSchema(cls)
+
+
+class ParamSetterBase:
 
     def __init__(self, **params):
         params = self.param_schema.apply_to(params)
@@ -222,5 +276,6 @@ class ParamsBase:
             setattr(self, name, value)
         super().__init__()
 
-    def __init_subclass__(cls):
-        cls.param_schema = ParamSchema(cls)
+
+class ParamsBase(ParamSchemaBase, ParamSetterBase):
+    pass
