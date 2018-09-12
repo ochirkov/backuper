@@ -195,9 +195,6 @@ class ParamSchema:
                 spec['default'] = defaults[name]
             specs[name] = ParamSpec(**spec)
 
-        print(cls, specs)
-        print()
-
         return specs
 
     def select_from(self, params):
@@ -216,7 +213,11 @@ class ParamSchema:
         )
 
         for name, spec in self.__dict__.items():
-            param_ctx = ctx.get(name)
+            try:
+                name_ctx, value_ctx = ctx.get(name)
+            except TypeError:
+                name_ctx = value_ctx = ctx.get('@self')
+
             try:
                 raw = selected.pop(name)
             except KeyError:
@@ -225,7 +226,7 @@ class ParamSchema:
                 else:
                     errors.append(ParamError(
                         '{0} is a required param'.format(name),
-                        param=name, ctx=param_ctx[0]
+                        param=name, ctx=name_ctx
                     ))
                     continue
             else:
@@ -233,7 +234,7 @@ class ParamSchema:
                     selected[name] = spec.type.cast(raw)
                 except Exception as err:  # TODO: ParamError
                     errors.append(ParamError(
-                        f'{name}: {err}', param=name, ctx=param_ctx[1]
+                        f'{name}: {err}', param=name, ctx=value_ctx
                     ))
 
         if errors:

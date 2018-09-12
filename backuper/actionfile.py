@@ -106,7 +106,6 @@ def build_executor(params):
         schema = get_combined_schema(AdapterExecutor, adapter_cls)
         params = schema.apply_to(params)
         exec_params = AdapterExecutor.param_schema.select_from(params)
-        exec_params['action'] = adapter_desc
         adapter_params = adapter_cls.param_schema.select_from(params)
 
         adapter_bases = (ParamSetterBase, adapter_cls)
