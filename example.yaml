@@ -1,0 +1,58 @@
+parallel: 2
+tasks:
+  - action: create rds backup
+    sleep: 1
+    result_backup:
+      created: 2018-03-23T14:34:33+0000
+      tags:
+        group: 1
+        task: 1
+  - group: optional group description
+      blah blah
+    tasks:
+      - action: create mongo snapshot
+          a job that will timeout
+        ignore_errors: true
+        timeout: 4
+        sleep: 6
+        result_backup:
+          created: 2018-04-30T12:13:12+0100
+          tags:
+            group: 2
+            task: 1
+      - action: create mongo backup
+        timeout: 6000
+        result_backup:
+          created: 2018-05-13T09:42:31-0200
+          tags:
+            group: 2
+            task: 2
+      - action: retrieve redis backups
+        result_backups:
+          - created: 2018-05-23T15:15:15+0100
+            tags:
+              group: 2
+              task: 3
+              snap: 1
+          - created: 2018-05-24T15:15:20+0100
+            tags:
+              group: 2
+              task: 3
+              snap: 2
+      - action: retrieve ec2 snapshots
+        sleep: 4
+        result_backups:
+          - created: 2018-05-30T08:53:08+0100
+            tags:
+              group: 2
+              task: 4
+              snap: 1
+          - created: 2018-06-01T09:01:01+0100
+            tags:
+              group: 2
+              task: 4
+              snap: 2
+    parallel: 2
+
+meta:
+  version: 1

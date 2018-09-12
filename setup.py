@@ -25,7 +25,7 @@ setup(
     zip_safe=False,
     entry_points={
             'console_scripts': [
-                '{} = {}.executor:entrypoint'.format(*[package_name]*2),
+                '{} = {}.cli:entrypoint'.format(*[package_name]*2),
             ],
         },
 )
